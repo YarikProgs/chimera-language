@@ -12,7 +12,7 @@ import net.aros.chimera.ast.first.Stmt;
 import net.aros.chimera.ast.ops.AssignmentOp;
 import net.aros.chimera.ast.ops.BinaryOp;
 import net.aros.chimera.ast.ops.UnaryOp;
-import net.aros.chimera.ast.ops.UnwrapType;
+import net.aros.chimera.ast.ops.NullAccessMode;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -184,7 +184,7 @@ public class Antlr2ChiVisitor extends ChimeraParserBaseVisitor<Node> {
 
     @Override
     public Node visitAssignment(ChimeraParser.AssignmentContext ctx) {
-        if (ctx.ternary() != null) return visit(ctx.ternary());
+        if (ctx.nullCoalesce() != null) return visit(ctx.nullCoalesce());
 
         Expr target = buildPostfixExpr((Expr) visit(ctx.primary()), ctx.postfix());
         Expr initializer = (Expr) visit(ctx.assignment());
@@ -202,16 +202,25 @@ public class Antlr2ChiVisitor extends ChimeraParserBaseVisitor<Node> {
         );
     }
 
+    @Override
+    public Node visitNullCoalesce(ChimeraParser.NullCoalesceContext ctx) {
+        Expr expr = (Expr) visit(ctx.ternary(0));
+        for (int i = 1; i < ctx.ternary().size(); i++) {
+            expr = new Expr.NullCoalesceExpr(expr, (Expr) visit(ctx.ternary(i)), pos(ctx));
+        }
+        return expr;
+    }
+
     private Expr buildPostfixExpr(Expr expr, List<ChimeraParser.PostfixContext> postfixes) {
         for (ChimeraParser.PostfixContext postfix : postfixes) {
             if (postfix.argumentsPostfix() != null)
                 expr = new Expr.CallExpr(expr, postfix.argumentsPostfix().arguments().argument().stream().map(arg -> (Expr.ArgumentExpr) visit(arg)).toList(), pos(postfix));
             else if (postfix.memberAccessPostfix() != null)
-                expr = new Expr.MemberAccessExpr(expr, identifier(postfix.memberAccessPostfix().Identifier()), pos(postfix));
+                expr = new Expr.MemberAccessExpr(expr, postfix.memberAccessPostfix().QuestionMark() == null ? NullAccessMode.REQUIRE_NONNULL : NullAccessMode.PROPAGATE_NULL, identifier(postfix.memberAccessPostfix().Identifier()), pos(postfix));
             else if (postfix.strictUnwrapPostfix() != null)
-                expr = new Expr.UnwrapExpr(expr, UnwrapType.STRICT, pos(postfix));
+                expr = new Expr.UnwrapExpr(expr, NullAccessMode.REQUIRE_NONNULL, pos(postfix));
             else if (postfix.unwrapPostfix() != null)
-                expr = new Expr.UnwrapExpr(expr, UnwrapType.NULLABLE, pos(postfix));
+                expr = new Expr.UnwrapExpr(expr, NullAccessMode.PROPAGATE_NULL, pos(postfix));
         }
         return expr;
     }

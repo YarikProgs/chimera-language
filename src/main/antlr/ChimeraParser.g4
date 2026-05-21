@@ -105,7 +105,7 @@ modifier
 
 assignment
     : modifier* primary postfix* (Colon type)? assignmentOperator assignment
-    | ternary
+    | nullCoalesce
     ;
 
 assignmentOperator
@@ -128,6 +128,10 @@ assignmentOperator
 
 lambda
     : Fn LParen parameters RParen (Colon type)? (block | (Assign expr))
+    ;
+
+nullCoalesce
+    : ternary (DoubleQuestionMark ternary)*
     ;
 
 ternary
@@ -204,7 +208,7 @@ argumentsPostfix
     ;
 
 memberAccessPostfix
-    : Dot Identifier
+    : QuestionMark? Dot Identifier
     ;
 
 unwrapPostfix

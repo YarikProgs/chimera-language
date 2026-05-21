@@ -2,7 +2,7 @@ package net.aros.chimera.parsing.test;
 
 import net.aros.chimera.ast.Modifier;
 import net.aros.chimera.ast.first.*;
-import net.aros.chimera.ast.ops.UnwrapType;
+import net.aros.chimera.ast.ops.NullAccessMode;
 
 import java.util.List;
 import java.util.Map;
@@ -105,13 +105,18 @@ public class Ast2PseudoCodeVisitor implements ChiVisitor<String> {
     }
 
     @Override
+    public String visitNullCoalesceExpr(Expr.NullCoalesceExpr expr) {
+        return "(" + visit(expr.first()) + " ?? " + visit(expr.second()) + ")";
+    }
+
+    @Override
     public String visitShortTryExpr(Expr.ShortTryExpr expr) {
         return "try " + visit(expr.expr());
     }
 
     @Override
     public String visitUnwrapExpr(Expr.UnwrapExpr expr) {
-        return "(" + visit(expr.expr()) + ")" + (expr.type() == UnwrapType.NULLABLE ? "!" : "!!");
+        return "(" + visit(expr.expr()) + ")" + (expr.nullAccessMode() == NullAccessMode.PROPAGATE_NULL ? "!" : "!!");
     }
 
     @Override
@@ -156,7 +161,7 @@ public class Ast2PseudoCodeVisitor implements ChiVisitor<String> {
 
     @Override
     public String visitMemberAccessExpr(Expr.MemberAccessExpr expr) {
-        return visit(expr.object()) + "." + expr.member();
+        return visit(expr.object()) + (expr.nullAccessMode() == NullAccessMode.PROPAGATE_NULL ? "?" : "") + "." + expr.member();
     }
 
     @Override

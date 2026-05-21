@@ -21,6 +21,9 @@ m: list<int | float | map<int | float, int | float | string?>?> = null;
 m = cond1 or cond2 or cond3;
 m = cond ? a : cond2 ? b : c;
 m = (try riskyFunction!!()!)!!;
+m = m ?? m ?? m ?? m;
+
+m?.internal?.method();
 
 fn mixStafford13(seed: int): int {
 	seed = (seed ^ (seed >> 30)) * -4658895280553007687;
@@ -34,7 +37,8 @@ fn generateUniqueSeed(): int {
 	return mth.atomicUpdateAndGet(SEED_UNIQUIFIER, seed=1181783497276652981, newValue=0, time=gl.std.now());
 }
 
-fn xorOther(self: Seed128bit, other: Seed128bit): Seed128bit {
+[Inline(always = true)]
+fn xorOther([ParameterAsSelf] self: Seed128bit, other: Seed128bit): Seed128bit {
 	return other.seedLo xor other.seedHi;
 }
 fn hashCode(self: HashedString): int {
