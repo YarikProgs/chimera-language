@@ -1,6 +1,7 @@
 plugins {
-    id("java")
-    id("antlr")
+    java
+    antlr
+    application
 }
 
 group = "net.aros.chimera"
@@ -16,6 +17,11 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     "antlr"("org.antlr:antlr4:4.7.1")
+    implementation("org.antlr:antlr4-runtime:4.7.1")
+}
+
+application {
+    mainClass.set("net.aros.chimera.ChimeraMain")
 }
 
 tasks.generateGrammarSource {
