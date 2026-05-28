@@ -1,9 +1,9 @@
 package net.aros.chimera;
 
-import net.aros.chimera.ast.first.Program;
-import net.aros.chimera.parsing.ChiParser;
+import net.aros.chimera.diagnostics.rendering.DefaultDiagnosticRenderer;
+import net.aros.chimera.parsing.ChimeraParser;
 import net.aros.chimera.parsing.SourceFile;
-import net.aros.chimera.parsing.test.Ast2PseudoCodeVisitor;
+import net.aros.chimera.parsing.parsing.ParseResult;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -11,11 +11,14 @@ import java.nio.file.Path;
 
 public class ChimeraMain {
     public static void main(String[] args) throws URISyntaxException, IOException {
+        SourceFile sourceFile = SourceFile.from(Path.of(ChimeraMain.class.getResource("/third.chi").toURI()));
+        ParseResult result = new ChimeraParser(sourceFile).parse();
 
-        Program program = new ChiParser().parse(SourceFile.from(Path.of(ChimeraMain.class.getResource("/third.chi").toURI())));
-        Ast2PseudoCodeVisitor visitor = new Ast2PseudoCodeVisitor();
+        String rendered = new DefaultDiagnosticRenderer().renderDiagnostics(sourceFile, result.diagnostics());
 
-        System.out.println(program);
-        System.out.println(visitor.visit(program));
+        System.out.println(rendered);
+        if (!result.hasErrors()) {
+            System.out.println(result.result());
+        }
     }
 }

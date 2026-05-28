@@ -1,7 +1,18 @@
-lexer grammar ChimeraLexer;
+lexer grammar ChimeraAntlrLexer;
 
 @header {
 package net.aros.chimera;
+}
+
+tokens {
+    ERROR_UNTERMINATED_STRING,
+    ERROR_INVALID_ESCAPE,
+    ERROR_UNTERMINATED_COMMENT,
+    ERROR_UNMATCHED_COMMENT_CLOSURE,
+    ERROR_INVALID_NUMBER,
+    ERROR_INVALID_CHARACTER,
+    ERROR_EXPR,
+    ERROR_STMT
 }
 
 // Keywords
@@ -82,9 +93,19 @@ Identifier    : [_\p{L}][_\p{L}\p{N}]*           ;
 IntLiteral    : [0-9]+                           ;
 FloatLiteral  : [0-9]* '.' [0-9]+                ;
 StringLiteral
-    : '"' ( '\\' . | ~["\\\r\n] )* '"'
-    | '\'' ( '\\' . | ~['\\\r\n] )* '\''
+    : '"'  ( '\\' [ntr"\\] | ~["\\\r\n] )* '"'
+    | '\'' ( '\\' [ntr'\\] | ~['\\\r\n] )* '\''
     ;
 LineComment   : '//' ~[\r\n]*            -> skip ;
 BlockComment  : '/*' .*? '*/'            -> skip ;
 WS            : [ \t\r\n]+               -> skip ;
+
+InvalidIntegerIdentifier        : [0-9]+ [_\p{L}] [_\p{L}\p{N}]*                                                      -> type(ERROR_INVALID_NUMBER)            ;
+InvalidFloatIdentifier          : [0-9]* '.' [0-9]+ [_\p{L}] [_\p{L}\p{N}]*                                           -> type(ERROR_INVALID_NUMBER)            ;
+InvalidEscapeDoubleQuotedString : '"'  ( '\\' [ntr"\\] | ~["\\\r\n] )* '\\' ~[ntr"\r\n] ( '\\' . | ~["\\\r\n] )* '"'  -> type(ERROR_INVALID_ESCAPE)            ;
+InvalidEscapeSingleQuotedString : '\'' ( '\\' [ntr'\\] | ~['\\\r\n] )* '\\' ~[ntr'\r\n] ( '\\' . | ~['\\\r\n] )* '\'' -> type(ERROR_INVALID_ESCAPE)            ;
+UnterminatedDoubleQuoteString   : '"' ( '\\' . | ~["\\\r\n] )* (('\r'? '\n') | EOF)                                   -> type(ERROR_UNTERMINATED_STRING)       ;
+UnterminatedSingleQuoteString   : '\'' ( '\\' . | ~['\\\r\n] )* (('\r'? '\n') | EOF)                                  -> type(ERROR_UNTERMINATED_STRING)       ;
+UnterminatedComment             : '/*'                                                                                -> type(ERROR_UNTERMINATED_COMMENT)      ;
+UnmatchedCommentClosure         : '*/'                                                                                -> type(ERROR_UNMATCHED_COMMENT_CLOSURE) ;
+InvalidCharacter                : .                                                                                   -> type(ERROR_INVALID_CHARACTER)         ;

@@ -1,6 +1,6 @@
 package net.aros.chimera.ast.first;
 
-public interface ChiVisitor<T> {
+public interface ChimeraVisitor<T> {
     T visitProgram(Program program);
     T visitExprStmt(Stmt.ExprStmt stmt);
     T visitIfStmt(Stmt.IfStmt stmt);
@@ -32,6 +32,9 @@ public interface ChiVisitor<T> {
     T visitListTypeExpr(Expr.TypeExpr.ListTypeExpr expr);
     T visitMapTypeExpr(Expr.TypeExpr.MapTypeExpr expr);
     T visitFunctionType(Expr.TypeExpr.FunctionType expr);
+
+    T visitErrorExpr(Expr.ErrorExpr expr);
+    T visitErrorStmt(Stmt.ErrorStmt stmt);
 
     default T visit(Node node) {
         return switch (node) {
@@ -65,6 +68,10 @@ public interface ChiVisitor<T> {
             case Stmt.DoWhileStmt stmt -> visitDoWhileStmt(stmt);
             case Stmt.ForStmt stmt -> visitForStmt(stmt);
             case Stmt.ReturnStmt stmt -> visitReturnStmt(stmt);
+
+            case Expr.ErrorExpr expr -> visitErrorExpr(expr);
+            case Stmt.ErrorStmt stmt -> visitErrorStmt(stmt);
+
             case Program program -> visitProgram(program);
         };
     }

@@ -1,15 +1,16 @@
 package net.aros.chimera.parsing.test;
 
 import net.aros.chimera.ast.Modifier;
-import net.aros.chimera.ast.first.*;
+import net.aros.chimera.ast.first.ChimeraVisitor;
+import net.aros.chimera.ast.first.Expr;
+import net.aros.chimera.ast.first.Program;
+import net.aros.chimera.ast.first.Stmt;
 import net.aros.chimera.ast.ops.NullAccessMode;
 
-import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class Ast2PseudoCodeVisitor implements ChiVisitor<String> {
+public class ChimeraPseudocodeBuilder implements ChimeraVisitor<String> {
     @Override
     public String visitProgram(Program program) {
         return build(b -> {
@@ -64,7 +65,7 @@ public class Ast2PseudoCodeVisitor implements ChiVisitor<String> {
     public String visitForStmt(Stmt.ForStmt stmt) {
         return build(b -> {
             b.append(stmt.annotations().stream().map(a -> visit(a) + "\n").collect(Collectors.joining()));
-            b.append("for ").append(String.join(", ", stmt.variables())).append(" in ")
+            b.append("for ").append(String.join(", ", stmt.variables().stream().map(Expr.VarExpr::name).toList())).append(" in ")
                     .append(visit(stmt.iterator())).append(" ").append(visit(stmt.body()));
         });
     }
@@ -80,7 +81,7 @@ public class Ast2PseudoCodeVisitor implements ChiVisitor<String> {
         return build(b -> {
             b.append("fn(")
                     .append(expr.parameters().stream().map(this::visit).collect(Collectors.joining(", ")))
-                    .append(") ").append(expr.body().map(this::visit, singleLine -> " = " + visit(singleLine)));
+                    .append(") ").append(visit(expr.body()));
         });
     }
 
@@ -98,7 +99,7 @@ public class Ast2PseudoCodeVisitor implements ChiVisitor<String> {
     @Override
     public String visitTernaryExpr(Expr.TernaryExpr expr) {
         return build(b -> {
-            b       .append("(")
+            b.append("(")
                     .append(visit(expr.cond())).append(" ? ").append(visit(expr.thenExpr())).append(" : ").append(visit(expr.elseExpr()))
                     .append(")");
         });
@@ -121,17 +122,17 @@ public class Ast2PseudoCodeVisitor implements ChiVisitor<String> {
 
     @Override
     public String visitLiteralExpr(Expr.LiteralExpr expr) {
-        if (expr.value() instanceof List<?> list) {
-            return "[" + list.stream().map(this::toStringNodeCheck).collect(Collectors.joining(", ")) + "]";
-        }
-        if (expr.value() instanceof Map<?, ?> map) {
-            return "{" + map.entrySet().stream().map(e -> toStringNodeCheck(e.getKey()) + ": " + toStringNodeCheck(e.getValue())).collect(Collectors.joining(", ")) + "}";
-        }
-        return toStringNodeCheck(expr.value());
-    }
-
-    private String toStringNodeCheck(Object obj) {
-        return obj instanceof Node n ? visit(n) : String.valueOf(obj);
+        return switch (expr) {
+            case Expr.LiteralExpr.Int i -> i.value().toString();
+            case Expr.LiteralExpr.Float f -> f.value().toString();
+            case Expr.LiteralExpr.Bool b -> String.valueOf(b.value());
+            case Expr.LiteralExpr.Null n -> "null";
+            case Expr.LiteralExpr.String s -> "\"" + s.value() + "\"";
+            case Expr.LiteralExpr.List l ->
+                    "[" + l.value().stream().map(this::visit).collect(Collectors.joining(", ")) + "]";
+            case Expr.LiteralExpr.Map m ->
+                    "{" + m.value().entrySet().stream().map(e -> visit(e.getKey()) + ": " + visit(e.getValue())).collect(Collectors.joining(", ")) + "}";
+        };
     }
 
     @Override
@@ -146,12 +147,12 @@ public class Ast2PseudoCodeVisitor implements ChiVisitor<String> {
 
     @Override
     public String visitBinaryExpr(Expr.BinaryExpr expr) {
-        return visit(expr.left()) + " " + expr.op().getValues().getFirst() + " " + visit(expr.right());
+        return visit(expr.left()) + " " + expr.op() + " " + visit(expr.right());
     }
 
     @Override
     public String visitUnaryExpr(Expr.UnaryExpr expr) {
-        return expr.op().getValues().getFirst() + visit(expr.expr());
+        return expr.op() + " " + visit(expr.expr());
     }
 
     @Override
@@ -231,5 +232,15 @@ public class Ast2PseudoCodeVisitor implements ChiVisitor<String> {
         StringBuilder builder = new StringBuilder();
         consumer.accept(builder);
         return builder.toString();
+    }
+
+    @Override
+    public String visitErrorExpr(Expr.ErrorExpr expr) {
+        return "<EXPRERR>";
+    }
+
+    @Override
+    public String visitErrorStmt(Stmt.ErrorStmt stmt) {
+        return "<STMTERR>";
     }
 }
