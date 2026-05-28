@@ -5,6 +5,7 @@ import net.aros.chimera.ChimeraAntlrParserBaseVisitor;
 import net.aros.chimera.ast.Modifier;
 import net.aros.chimera.ast.first.Expr;
 import net.aros.chimera.ast.first.Stmt;
+import net.aros.chimera.ast.ops.BinaryOp;
 import net.aros.chimera.ast.ops.NullAccessMode;
 import net.aros.chimera.parsing.astbuilding.AstBuildException;
 import net.aros.chimera.parsing.astbuilding.ChimeraAstBuilder;
@@ -218,24 +219,48 @@ public class ChimeraExprBuilder extends ChimeraAntlrParserBaseVisitor<Expr> {
     @Override
     public Expr visitAssignmentExprMissingType(ChimeraAntlrParser.AssignmentExprMissingTypeContext ctx) {
         parent.getReporter().onAssignmentMissingType(ctx);
-        return new Expr.AssignExpr(visit(ctx.lvalue), Optional.empty(), visit(ctx.rvalue), pos(ctx));
+        BinaryOp op = getBinaryOperatorFromAssignment(ctx.assignmentOperator().op);
+        Expr lvalue = visit(ctx.lvalue);
+        Expr rvalue = visit(ctx.rvalue);
+        if (op != null) {
+            rvalue = new Expr.BinaryExpr(lvalue, op, rvalue, pos(ctx));
+        }
+        return new Expr.AssignExpr(lvalue, Optional.empty(), rvalue, pos(ctx));
     }
 
     @Override
     public Expr visitAssignmentExprMissingRhs(ChimeraAntlrParser.AssignmentExprMissingRhsContext ctx) {
         parent.getReporter().onAssignmentMissingRhs(ctx);
-        return new Expr.AssignExpr(visit(ctx.lvalue), Optional.ofNullable(ctx.type()).map(parent.getTypeBuilder()::visit), new Expr.ErrorExpr(pos(ctx.assignmentOperator())), pos(ctx));
+        BinaryOp op = getBinaryOperatorFromAssignment(ctx.assignmentOperator().op);
+        Expr lvalue = visit(ctx.lvalue);
+        Expr rvalue = new Expr.ErrorExpr(pos(ctx.assignmentOperator()));
+        if (op != null) {
+            rvalue = new Expr.BinaryExpr(lvalue, op, rvalue, pos(ctx));
+        }
+        return new Expr.AssignExpr(lvalue, Optional.ofNullable(ctx.type()).map(parent.getTypeBuilder()::visit), rvalue, pos(ctx));
     }
 
     @Override
     public Expr visitAssignmentExprMissingLhs(ChimeraAntlrParser.AssignmentExprMissingLhsContext ctx) {
         parent.getReporter().onAssignmentMissingLhs(ctx);
-        return new Expr.AssignExpr(new Expr.ErrorExpr(pos(ctx)), Optional.ofNullable(ctx.type()).map(parent.getTypeBuilder()::visit), visit(ctx.rvalue), pos(ctx));
+        BinaryOp op = getBinaryOperatorFromAssignment(ctx.assignmentOperator().op);
+        Expr lvalue = new Expr.ErrorExpr(pos(ctx));
+        Expr rvalue = visit(ctx.rvalue);
+        if (op != null) {
+            rvalue = new Expr.BinaryExpr(lvalue, op, rvalue, pos(ctx));
+        }
+        return new Expr.AssignExpr(lvalue, Optional.ofNullable(ctx.type()).map(parent.getTypeBuilder()::visit), rvalue, pos(ctx));
     }
 
     @Override
     public Expr visitAssignmentExpr(ChimeraAntlrParser.@NotNull AssignmentExprContext ctx) {
-        return new Expr.AssignExpr(visit(ctx.lvalue), Optional.ofNullable(ctx.type()).map(parent.getTypeBuilder()::visit), visit(ctx.rvalue), pos(ctx));
+        BinaryOp op = getBinaryOperatorFromAssignment(ctx.assignmentOperator().op);
+        Expr lvalue = visit(ctx.lvalue);
+        Expr rvalue = visit(ctx.rvalue);
+        if (op != null) {
+            rvalue = new Expr.BinaryExpr(lvalue, op, rvalue, pos(ctx));
+        }
+        return new Expr.AssignExpr(lvalue, Optional.ofNullable(ctx.type()).map(parent.getTypeBuilder()::visit), rvalue, pos(ctx));
     }
 
     @Override

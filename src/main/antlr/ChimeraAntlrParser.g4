@@ -118,21 +118,21 @@ modifier
     ;
 
 assignmentOperator
-    : Assign
-    | PlusAssign
-    | MinusAssign
-    | MultiplyAssign
-    | DivideAssign
-    | ModuloAssign
-    | BitAndAssign
-    | BitOrAssign
-    | BitXorAssign
-    | ShiftLeftAssign
-    | ShiftRightAssign
-    | ShiftRightUnsignedAssign
-    | LogicAndAssign
-    | LogicOrAssign
-    | LogicXorAssign
+    : op=Assign
+    | op=PlusAssign
+    | op=MinusAssign
+    | op=MultiplyAssign
+    | op=DivideAssign
+    | op=ModuloAssign
+    | op=BitAndAssign
+    | op=BitOrAssign
+    | op=BitXorAssign
+    | op=ShiftLeftAssign
+    | op=ShiftRightAssign
+    | op=ShiftRightUnsignedAssign
+    | op=LogicAndAssign
+    | op=LogicOrAssign
+    | op=LogicXorAssign
     ;
 
 arguments
