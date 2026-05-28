@@ -1,8 +1,8 @@
+[VeryVeryConstant(amISure = true)]
 const GOLDEN_RATIO_64 = -7046029254386353131;
 const SILVER_RATIO_64 = 7640891576956012809;
 test: float = 2;
 test += 2;
-
 if true {}
 else if true {}
 else if true {}
@@ -14,10 +14,10 @@ l: list<int> = [1, 2, 3];
 l: list<int | string> = [1, 2, "3"];
 m: map<int, int | float | string?> = {
     1: "1",
-    2.2: null,
+    2.2: "none",
     3: "3"
 };
-m: list<int | float | map<int | float, int | float | string?>?> = null;
+m: list<int | float | map<int | float, int | float | string?>?> = [1];
 m = cond1 or cond2 or cond3;
 m = cond ? a : cond2 ? b : c;
 m = (try riskyFunction!!()!)!!;

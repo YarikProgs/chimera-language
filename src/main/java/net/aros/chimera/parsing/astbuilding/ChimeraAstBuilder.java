@@ -4,6 +4,7 @@ import net.aros.chimera.ChimeraAntlrParser;
 import net.aros.chimera.ast.first.Program;
 import net.aros.chimera.ast.first.Stmt;
 import net.aros.chimera.diagnostics.reporting.DiagnosticReporter;
+import net.aros.chimera.parsing.astbuilding.builders.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -11,6 +12,7 @@ import java.util.List;
 
 public class ChimeraAstBuilder {
     private final ChimeraTypeBuilder typeBuilder = new ChimeraTypeBuilder();
+    private final ChimeraElementBuilder elementBuilder = new ChimeraElementBuilder(this);
     private final ChimeraExprBuilder exprBuilder = new ChimeraExprBuilder(this);
     private final ChimeraStmtBuilder stmtBuilder = new ChimeraStmtBuilder(this);
 
@@ -30,6 +32,10 @@ public class ChimeraAstBuilder {
 
     public ChimeraTypeBuilder getTypeBuilder() {
         return typeBuilder;
+    }
+
+    public ChimeraElementBuilder getElementBuilder() {
+        return elementBuilder;
     }
 
     public ChimeraExprBuilder getExprBuilder() {

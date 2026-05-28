@@ -31,9 +31,9 @@ public abstract class DiagnosticReporter {
 
 //    public abstract void onNullCoalesceMissingRhs(ChimeraAntlrParser.NullCoalesceMissingRhsContext ctx);
 
-    public abstract void onTernaryMissingThen(ChimeraAntlrParser.TernaryMissingThenContext ctx);
-
-    public abstract void onTernaryMissingElse(ChimeraAntlrParser.TernaryMissingElseContext ctx);
-
-    public abstract void onTernaryMissingThenAndElse(ChimeraAntlrParser.TernaryMissingThenAndElseContext ctx);
+//    public abstract void onTernaryMissingThen(ChimeraAntlrParser.TernaryMissingThenContext ctx);
+//
+//    public abstract void onTernaryMissingElse(ChimeraAntlrParser.TernaryMissingElseContext ctx);
+//
+//    public abstract void onTernaryMissingThenAndElse(ChimeraAntlrParser.TernaryMissingThenAndElseContext ctx);
 }

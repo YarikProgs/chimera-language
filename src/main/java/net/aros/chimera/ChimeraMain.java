@@ -4,6 +4,7 @@ import net.aros.chimera.diagnostics.rendering.DefaultDiagnosticRenderer;
 import net.aros.chimera.parsing.ChimeraParser;
 import net.aros.chimera.parsing.SourceFile;
 import net.aros.chimera.parsing.parsing.ParseResult;
+import net.aros.chimera.parsing.test.ChimeraPseudocodeBuilder;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -19,6 +20,8 @@ public class ChimeraMain {
         System.out.println(rendered);
         if (!result.hasErrors()) {
             System.out.println(result.result());
+
+            System.out.println(new ChimeraPseudocodeBuilder().visit(result.result()));
         }
     }
 }

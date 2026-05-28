@@ -76,27 +76,27 @@ public class DefaultDiagnosticReporter extends DiagnosticReporter {
 //        );
 //    }
 
-    @Override
-    public void onTernaryMissingThen(ChimeraAntlrParser.@NotNull TernaryMissingThenContext ctx) {
-        diagnosticCollector.reportError(
-                posHelper.end(ctx.QuestionMark().getSymbol()),
-                "ternary requires 'then' expression"
-        );
-    }
-
-    @Override
-    public void onTernaryMissingElse(ChimeraAntlrParser.@NotNull TernaryMissingElseContext ctx) {
-        diagnosticCollector.reportError(
-                ctx.Colon() != null ? posHelper.end(ctx.Colon().getSymbol()) : posHelper.end(ctx.expr()),
-                "ternary requires 'else' expression"
-        );
-    }
-
-    @Override
-    public void onTernaryMissingThenAndElse(ChimeraAntlrParser.TernaryMissingThenAndElseContext ctx) {
-        diagnosticCollector.reportError(
-                posHelper.all(ctx),
-                "ternary requires 'then' and 'else' expressions"
-        );
-    }
+//    @Override
+//    public void onTernaryMissingThen(ChimeraAntlrParser.@NotNull TernaryMissingThenContext ctx) {
+//        diagnosticCollector.reportError(
+//                posHelper.end(ctx.QuestionMark().getSymbol()),
+//                "ternary requires 'then' expression"
+//        );
+//    }
+//
+//    @Override
+//    public void onTernaryMissingElse(ChimeraAntlrParser.@NotNull TernaryMissingElseContext ctx) {
+//        diagnosticCollector.reportError(
+//                ctx.Colon() != null ? posHelper.end(ctx.Colon().getSymbol()) : posHelper.end(ctx.expr()),
+//                "ternary requires 'else' expression"
+//        );
+//    }
+//
+//    @Override
+//    public void onTernaryMissingThenAndElse(ChimeraAntlrParser.TernaryMissingThenAndElseContext ctx) {
+//        diagnosticCollector.reportError(
+//                posHelper.all(ctx),
+//                "ternary requires 'then' and 'else' expressions"
+//        );
+//    }
 }

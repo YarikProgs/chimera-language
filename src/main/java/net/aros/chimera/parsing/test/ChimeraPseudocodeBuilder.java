@@ -1,10 +1,7 @@
 package net.aros.chimera.parsing.test;
 
 import net.aros.chimera.ast.Modifier;
-import net.aros.chimera.ast.first.ChimeraVisitor;
-import net.aros.chimera.ast.first.Expr;
-import net.aros.chimera.ast.first.Program;
-import net.aros.chimera.ast.first.Stmt;
+import net.aros.chimera.ast.first.*;
 import net.aros.chimera.ast.ops.NullAccessMode;
 
 import java.util.function.Consumer;
@@ -88,11 +85,17 @@ public class ChimeraPseudocodeBuilder implements ChimeraVisitor<String> {
     @Override
     public String visitAssignExpr(Expr.AssignExpr expr) {
         return build(b -> {
-            b.append(expr.modifiers().stream().map(Modifier::name).collect(Collectors.joining(" ")));
-            if (!expr.modifiers().isEmpty()) b.append(" ");
-            b.append(visit(expr.target()));
+            b.append(visit(expr.lvalue()));
             expr.type().ifPresent(type -> b.append(": ").append(visit(type)));
-            b.append(" = ").append(visit(expr.initializer()));
+            b.append(" = ").append(visit(expr.rvalue()));
+        });
+    }
+
+    @Override
+    public String visitModifiedExpr(Expr.ModifiedExpr expr) {
+        return build(b -> {
+            for (Modifier mod : expr.modifiers()) b.append(mod == Modifier.CONST ? "const " : "@ ");
+            b.append(visit(expr.expr()));
         });
     }
 
@@ -136,11 +139,11 @@ public class ChimeraPseudocodeBuilder implements ChimeraVisitor<String> {
     }
 
     @Override
-    public String visitAnnotationExpr(Expr.AnnotationExpr expr) {
+    public String visitAnnotation(Node.Annotation annotation) {
         return build(b -> {
             b.append("[");
-            b.append(expr.name());
-            expr.args().ifPresent(args -> b.append("(").append(String.join(", ", args.stream().map(this::visit).toList())).append(")"));
+            b.append(annotation.name());
+            annotation.args().ifPresent(args -> b.append("(").append(String.join(", ", args.stream().map(this::visit).toList())).append(")"));
             b.append("]");
         });
     }
@@ -171,7 +174,7 @@ public class ChimeraPseudocodeBuilder implements ChimeraVisitor<String> {
     }
 
     @Override
-    public String visitParameterExpr(Expr.ParameterExpr expr) {
+    public String visitParameter(Node.Parameter expr) {
         return build(b -> {
             b.append(expr.annotations().stream().map(a -> visit(a) + " ").collect(Collectors.joining()));
             b.append(expr.name());
@@ -181,7 +184,7 @@ public class ChimeraPseudocodeBuilder implements ChimeraVisitor<String> {
     }
 
     @Override
-    public String visitArgumentExpr(Expr.ArgumentExpr expr) {
+    public String visitArgument(Node.Argument expr) {
         return build(b -> {
             expr.name().ifPresent(name -> b.append(name).append(" = "));
             b.append(visit(expr.value()));
@@ -189,42 +192,42 @@ public class ChimeraPseudocodeBuilder implements ChimeraVisitor<String> {
     }
 
     @Override
-    public String visitIdentifierType(Expr.TypeExpr.IdentifierType expr) {
+    public String visitIdentifierType(Type.IdentifierType expr) {
         return expr.name();
     }
 
     @Override
-    public String visitUnionTypeExpr(Expr.TypeExpr.UnionTypeExpr expr) {
-        return expr.types().stream().map(this::visit).collect(Collectors.joining(" | "));
+    public String visitUnionType(Type.UnionType expr) {
+        return visit(expr.left()) + " | " + visit(expr.right());
     }
 
     @Override
-    public String visitIntersectionTypeExpr(Expr.TypeExpr.IntersectionTypeExpr expr) {
-        return expr.types().stream().map(this::visit).collect(Collectors.joining(" & "));
+    public String visitIntersectionType(Type.IntersectionType expr) {
+        return visit(expr.left()) + " & " + visit(expr.right());
     }
 
     @Override
-    public String visitNullableTypeExpr(Expr.TypeExpr.NullableTypeExpr expr) {
+    public String visitNullableType(Type.NullableType expr) {
         return visit(expr.type()) + "?";
     }
 
     @Override
-    public String visitTupleTypeExpr(Expr.TypeExpr.TupleTypeExpr expr) {
+    public String visitTupleType(Type.TupleType expr) {
         return "tuple<" + expr.types().stream().map(this::visit).collect(Collectors.joining(", ")) + ">";
     }
 
     @Override
-    public String visitListTypeExpr(Expr.TypeExpr.ListTypeExpr expr) {
+    public String visitListType(Type.ListType expr) {
         return "list<" + visit(expr.type()) + ">";
     }
 
     @Override
-    public String visitMapTypeExpr(Expr.TypeExpr.MapTypeExpr expr) {
+    public String visitMapType(Type.MapType expr) {
         return "map<" + visit(expr.keyType()) + ", " + visit(expr.valueType()) + ">";
     }
 
     @Override
-    public String visitFunctionType(Expr.TypeExpr.FunctionType expr) {
+    public String visitFunctionType(Type.FunctionType expr) {
         return "(" + expr.params().stream().map(this::visit).collect(Collectors.joining(", ")) + ") -> " + visit(expr.returnType());
     }
 

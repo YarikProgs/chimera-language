@@ -19,10 +19,10 @@ import java.text.Normalizer;
 import java.util.List;
 
 public class AstUtils {
-    public static Modifier modifier(ChimeraAntlrParser.@NotNull ModifierContext ctx) {
-        if (ctx.At() != null) return Modifier.STATIC;
-        if (ctx.Const() != null) return Modifier.CONST;
-        throw new AstBuildException("Got unknown modifier");
+    public static Modifier modifier(ChimeraAntlrParser.ModifierContext mod) {
+        if (mod.At() != null) return Modifier.STATIC;
+        if (mod.Const() != null) return Modifier.CONST;
+        throw new AstBuildException("Unknown modifier: " + mod.getText());
     }
 
     public static BinaryOp getBinaryOperator(@NotNull Token token) {

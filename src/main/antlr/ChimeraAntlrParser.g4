@@ -15,10 +15,10 @@ program
 // Statements
 
 stmt
-    : annotations If condition stmt (Else stmt)?                                                             # IfStmt
+    : annotations If expr stmt (Else stmt)?                                                                  # IfStmt
     | annotations modifier* Fn Identifier LParen parameters RParen (Colon type)? (blockStmt | (Assign expr)) # FnStmt
-    | annotations Do blockStmt While condition Semicolon                                                     # DoWhileStmt
-    | annotations While condition blockStmt                                                                  # WhileStmt
+    | annotations Do blockStmt While expr Semicolon                                                          # DoWhileStmt
+    | annotations While expr blockStmt                                                                       # WhileStmt
     | annotations For forHeader stmt                                                                         # ForStmt
     | annotations Return expr? Semicolon                                                                     # ReturnStmt
     | annotations expr Semicolon                                                                             # ExprStmt
@@ -26,9 +26,8 @@ stmt
     | ERROR_STMT                                                                                             # ErrorStmt
     ;
 
-condition
-    : LParen expr RParen
-    | expr
+blockStmt
+    : LBrace stmt* RBrace
     ;
 
 forHeader
@@ -39,22 +38,61 @@ forHeader
 // Expressions
 
 expr
-    : Fn LParen parameters RParen (Colon type)? (blockStmt | (Assign expr)) # LambdaExpr
-    | assignment                                                            # AssignmentExprExpr
+    // Postfix
+    : expr LParen arguments RParen                                                              # ArgumentsPostfix
+    | expr QuestionMark? Dot Identifier                                                         # MemberAccessPostfix
+    | expr DoubleExclamationMark                                                                # StrictUnwrapPostfix
+    | expr ExclamationMark                                                                      # UnwrapPostfix
+    // Modifiers
+    | modifier+ expr                                                                            # ModifiedExpr
+    // Short try
+    | Try expr                                                                                  # ShortTryExpr
+    // Unary
+    | op=(ExclamationMark | Plus | Minus | BitNot) expr                                         # UnaryExpr
+    // Binary
+    | left=expr op=(Multiply | Divide | Modulo) right=expr                                      # FactorExpr
+    | left=expr op=(Plus | Minus) right=expr                                                    # TermExpr
+    | left=expr op=(ShiftLeft | ShiftRight | ShiftRightUnsigned) right=expr                     # ShiftExpr
+    | left=expr op=(Less | LessEqual | Greater | GreaterEqual) right=expr                       # ComparisonExpr
+    | left=expr op=(Equals | NotEquals) right=expr                                              # EqualityExpr
+    | left=expr BitAnd right=expr                                                               # BitwiseAndExpr
+    | left=expr BitXor right=expr                                                               # BitwiseXorExpr
+    | left=expr BitOr right=expr                                                                # BitwiseOrExpr
+    | left=expr LogicAnd right=expr                                                             # LogicalAndExpr
+    | left=expr LogicXor right=expr                                                             # LogicalXorExpr
+    | left=expr LogicOr right=expr                                                              # LogicalOrExpr
+    | cond=expr QuestionMark thenExpr=expr Colon elseExpr=expr                                  # TernaryExpr
+    | left=expr DoubleQuestionMark right=expr                                                   # NullCoalesceExpr
+    // Lambda
+    | Fn LParen parameters RParen (Colon type)? (blockStmt | (Assign expr))                     # LambdaExpr
+    // Assignment
+    | <assoc=right> lvalue=expr (Colon type)? assignmentOperator rvalue=expr                    # AssignmentExpr
+    // Atoms
+    | LBracket (expr (Comma expr)*)? RBracket                                                   # ListPrimary
+    | LBrace (mapPair (Comma mapPair)*)? RBrace                                                 # MapPrimary
+    | IntLiteral                                                                                # IntLiteralPrimary
+    | FloatLiteral                                                                              # FloatLiteralPrimary
+    | True                                                                                      # TruePrimary
+    | False                                                                                     # FalsePrimary
+    | Null                                                                                      # NullPrimary
+    | StringLiteral                                                                             # StringLiteralPrimary
+    | Identifier                                                                                # IdentifierPrimary
+    | LParen expr RParen                                                                        # ExprParenPrimary
+    // Error
+    | ERROR_EXPR                                                                                # ErrorExpr
     ;
 
-blockStmt
-    : LBrace stmt* RBrace
+annotations
+    : annotation*
+    ;
+
+annotation
+    : LBracket Identifier (LParen arguments RParen)? RBracket
     ;
 
 modifier
     : At
     | Const
-    ;
-
-assignment
-    : modifier* primary postfix* (Colon type)? assignmentOperator assignment # AssignmentExpr
-    | nullCoalesce                                                           # NullCoalesceAsgnmtExpr
     ;
 
 assignmentOperator
@@ -75,87 +113,6 @@ assignmentOperator
     | LogicXorAssign
     ;
 
-nullCoalesce
-    : ternary (DoubleQuestionMark ternary)* # NullCoalesceExpr
-//    | ternary DoubleQuestionMark            # NullCoalesceMissingRhs
-    ;
-
-ternary
-    : logicalOr                                 # LogicalOrTernExpr
-    | logicalOr QuestionMark expr Colon ternary # TernaryExpr
-    | logicalOr QuestionMark expr Colon?        # TernaryMissingElse
-    | logicalOr QuestionMark Colon ternary      # TernaryMissingThen
-    | logicalOr QuestionMark Colon?             # TernaryMissingThenAndElse
-    ;
-
-logicalOr
-    : logicalXor (LogicOr logicalXor)* # LogicalOrExpr
-//    | logicalXor op=LogicOr               # LogicalOrMissingRhs
-    ;
-
-logicalXor
-    : logicalAnd (LogicXor logicalAnd)* # LogicalXorExpr
-//    | logicalAnd op=LogicXor               # LogicalXorMissingRhs
-    ;
-
-logicalAnd
-    : bitwiseOr (LogicAnd bitwiseOr)* # LogicalAndExpr
-//    | bitwiseOr op=LogicAnd              # LogicalAndMissingRhs
-    ;
-
-bitwiseOr
-    : bitwiseXor (BitOr bitwiseXor)* # BitwiseOrExpr
-//    | bitwiseXor op=BitOr               # BitwiseOrMissingRhs
-    ;
-
-bitwiseXor
-    : bitwiseAnd (BitXor bitwiseAnd)* # BitwiseXorExpr
-//    | bitwiseAnd op=BitXor               # BitwiseXorMissingRhs
-    ;
-
-bitwiseAnd
-    : equality (BitAnd equality)* # BitwiseAndExpr
-//    | equality op=BitAnd             # BitwiseAndMissingRhs
-    ;
-
-equality
-    : comparison (op+=(Equals | NotEquals) comparison)* # EqualityExpr
-//    | comparison op=(Equals | NotEquals)                # EqualityMissingRhs
-    ;
-
-comparison
-    : shift (op+=(Less | LessEqual | Greater | GreaterEqual) shift)* # ComparisonExpr
-//    | shift op=(Less | LessEqual | Greater | GreaterEqual)           # ComparisonMissingRhs
-    ;
-
-shift
-    : term (op+=(ShiftLeft | ShiftRight | ShiftRightUnsigned) term)* # ShiftExpr
-//    | term op=(ShiftLeft | ShiftRight | ShiftRightUnsigned)          # ShiftMissingRhs
-    ;
-
-term
-    : factor (op+=(Plus | Minus) factor)* # TermExpr
-//    | factor op=(Plus | Minus)            # TermMissingRhs
-    ;
-
-factor
-    : unary (op+=(Multiply | Divide | Modulo) unary)* # FactorExpr
-//    | unary op=(Multiply | Divide | Modulo)           # FactorMissingRhs
-    ;
-
-unary
-    : op=(ExclamationMark | Plus | Minus | BitNot) unary # UnaryUnaryExpr
-    | Try unary                                          # ShortTryUnaryExpr
-    | primary postfix*                                   # CallUnaryExpr
-    ;
-
-postfix
-    : LParen arguments RParen      # ArgumentsPostfix
-    | QuestionMark? Dot Identifier # MemberAccessPostfix
-    | DoubleExclamationMark        # StrictUnwrapPostfix
-    | ExclamationMark              # UnwrapPostfix
-    ;
-
 arguments
     : (argument (Comma argument)*)?
     ;
@@ -173,56 +130,24 @@ parameter
     : annotations Identifier (Colon type)? (Assign expr)?
     ;
 
-primary
-    : IntLiteral                                                     # IntLiteralPrimary
-    | FloatLiteral                                                   # FloatLiteralPrimary
-    | StringLiteral                                                  # StringLiteralPrimary
-    | LBracket (expr (Comma expr)*)? RBracket                        # ListPrimary
-    | LBrace ((expr Colon expr) (Comma (expr Colon expr))*)? RBrace  # MapPrimary
-    | True                                                           # TruePrimary
-    | False                                                          # FalsePrimary
-    | Null                                                           # NullPrimary
-    | Identifier                                                     # IdentifierPrimary
-    | LParen expr RParen                                             # ExprParenPrimary
-    | ERROR_EXPR                                                     # ErrorExpr
+mapPair
+    : key=expr Colon value=expr
     ;
 
 
 // Types
 
 type
-    : unionType
-    ;
-
-unionType
-    : intersectionType (BitOr intersectionType)*
-    ;
-
-intersectionType
-    : postfixType (BitAnd postfixType)*
-    ;
-
-postfixType
-    : primaryType QuestionMark?
-    ;
-
-primaryType
-    : Identifier                                      # IdentifierType
-    | Tuple Less type (Comma type)* Greater           # TupleType
-    | LParen (type (Comma type)*)? RParen RArrow type # FunctionType
-    | List Less type Greater                          # ListType
-    | Map Less type Comma type Greater                # MapType
-    | LParen type RParen                              # ParenType
-    ;
-
-annotations
-    : annotation*
-    ;
-
-annotation
-    : LBracket annotationExpr RBracket
-    ;
-
-annotationExpr
-    : Identifier (LParen arguments RParen)?
+    // Nullable
+    : type QuestionMark                                               # NullableType
+    // Binary
+    | left=type BitAnd right=type                                     # IntersectionType
+    | left=type BitOr right=type                                      # UnionType
+    // Atoms
+    | Tuple Less type (Comma type)* Greater                           # TupleType
+    | LParen (args+=type (Comma args+=type)*)? RParen RArrow ret=type # FunctionType
+    | List Less type Greater                                          # ListType
+    | Map Less key=type Comma value=type Greater                      # MapType
+    | LParen type RParen                                              # ParenType
+    | Identifier                                                      # IdentifierType
     ;
