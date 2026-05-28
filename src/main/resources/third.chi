@@ -1,3 +1,5 @@
+a: /*should be a type*/ = 10
+
 [VeryVeryConstant(amISure = true)]
 const GOLDEN_RATIO_64 = -7046029254386353131;
 const SILVER_RATIO_64 = 7640891576956012809;

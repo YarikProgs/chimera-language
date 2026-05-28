@@ -5,6 +5,7 @@ import net.aros.chimera.diagnostics.DiagnosticCollector;
 import net.aros.chimera.diagnostics.util.TokenPositionHelper;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
+import org.jetbrains.annotations.NotNull;
 
 public abstract class DiagnosticReporter {
     protected final DiagnosticCollector diagnosticCollector;
@@ -29,11 +30,55 @@ public abstract class DiagnosticReporter {
 
     public abstract void onBinaryMissingRhs(ParserRuleContext ctx, String op);
 
-//    public abstract void onNullCoalesceMissingRhs(ChimeraAntlrParser.NullCoalesceMissingRhsContext ctx);
+    public abstract void onBinaryMissingLhs(ParserRuleContext ctx, String text);
 
-//    public abstract void onTernaryMissingThen(ChimeraAntlrParser.TernaryMissingThenContext ctx);
-//
-//    public abstract void onTernaryMissingElse(ChimeraAntlrParser.TernaryMissingElseContext ctx);
-//
-//    public abstract void onTernaryMissingThenAndElse(ChimeraAntlrParser.TernaryMissingThenAndElseContext ctx);
+    public abstract void onTernaryMissingThen(ChimeraAntlrParser.@NotNull TernaryExprMissingThenContext ctx);
+
+    public abstract void onTernaryMissingElse(ChimeraAntlrParser.@NotNull TernaryExprMissingElseContext ctx);
+
+    public abstract void onTernaryMissingThenAndElse(ChimeraAntlrParser.@NotNull TernaryExprMissingThenAndElseContext ctx);
+
+    public abstract void onLambdaMissingParameters(ChimeraAntlrParser.LambdaExprMissingParametersContext ctx);
+
+    public abstract void onLambdaMissingReturnType(ChimeraAntlrParser.LambdaExprMissingReturnTypeContext ctx);
+
+    public abstract void onLambdaMissingBody(ChimeraAntlrParser.LambdaExprMissingBodyContext ctx);
+
+    public abstract void onAssignmentMissingType(ChimeraAntlrParser.AssignmentExprMissingTypeContext ctx);
+
+    public abstract void onAssignmentMissingRhs(ChimeraAntlrParser.AssignmentExprMissingRhsContext ctx);
+
+    public abstract void onAssignmentMissingLhs(ChimeraAntlrParser.AssignmentExprMissingLhsContext ctx);
+
+    public abstract void onListPrimaryUnclosed(ChimeraAntlrParser.ListPrimaryUnclosedContext ctx);
+
+    public abstract void onMapPrimaryUnclosed(ChimeraAntlrParser.MapPrimaryUnclosedContext ctx);
+
+    public abstract void onUnclosedPrimary(ChimeraAntlrParser.ExprParenPrimaryUnclosedContext ctx);
+
+    public abstract void onPairMissingKey(ChimeraAntlrParser.MapPairWithoutKeyContext withoutKeyCtx);
+
+    public abstract void onPairMissingValue(ChimeraAntlrParser.MapPairWithoutValueContext withoutValueCtx);
+
+    public abstract void onPairMissingAll(ChimeraAntlrParser.MapPairWithoutAllContext withoutAllCtx);
+
+    public abstract void onIntersectionTypeMissingRhs(ChimeraAntlrParser.IntersectionTypeMissingRhsContext ctx);
+
+    public abstract void onIntersectionTypeMissingLhs(ChimeraAntlrParser.IntersectionTypeMissingLhsContext ctx);
+
+    public abstract void onUnionTypeMissingRhs(ChimeraAntlrParser.UnionTypeMissingRhsContext ctx);
+
+    public abstract void onUnionTypeMissingLhs(ChimeraAntlrParser.UnionTypeMissingLhsContext ctx);
+
+    public abstract void onTupleTypeMissingClosure(ChimeraAntlrParser.TupleTypeMissingClosureContext ctx);
+
+    public abstract void onListTypeMissingClosure(ChimeraAntlrParser.ListTypeMissingClosureContext ctx);
+
+    public abstract void onMapTypeMissingKey(ChimeraAntlrParser.MapTypeMissingKeyContext ctx);
+
+    public abstract void onMapTypeMissingValue(ChimeraAntlrParser.MapTypeMissingValueContext ctx);
+
+    public abstract void onMapTypeMissingClosure(ChimeraAntlrParser.MapTypeMissingClosureContext ctx);
+
+    public abstract void onParenTypeMissingClosure(ChimeraAntlrParser.ParenTypeMissingClosureContext ctx);
 }

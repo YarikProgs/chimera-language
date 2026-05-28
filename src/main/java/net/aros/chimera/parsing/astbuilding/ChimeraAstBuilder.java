@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ChimeraAstBuilder {
-    private final ChimeraTypeBuilder typeBuilder = new ChimeraTypeBuilder();
+    private final ChimeraTypeBuilder typeBuilder = new ChimeraTypeBuilder(this);
     private final ChimeraElementBuilder elementBuilder = new ChimeraElementBuilder(this);
     private final ChimeraExprBuilder exprBuilder = new ChimeraExprBuilder(this);
     private final ChimeraStmtBuilder stmtBuilder = new ChimeraStmtBuilder(this);

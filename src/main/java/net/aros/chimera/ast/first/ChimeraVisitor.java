@@ -39,6 +39,7 @@ public interface ChimeraVisitor<T> {
     T visitListType(Type.ListType type);
     T visitMapType(Type.MapType type);
     T visitFunctionType(Type.FunctionType type);
+    T visitErrorType(Type.ErrorType type);
 
     default T visit(Node node) {
         return switch (node) {
@@ -65,7 +66,8 @@ public interface ChimeraVisitor<T> {
             case Type.ListType type -> visitListType(type);
             case Type.MapType type -> visitMapType(type);
             case Type.FunctionType type -> visitFunctionType(type);
-            
+            case Type.ErrorType type -> visitErrorType(type);
+
             case Stmt.ExprStmt stmt -> visitExprStmt(stmt);
             case Stmt.IfStmt stmt -> visitIfStmt(stmt);
             case Stmt.BlockStmt stmt -> visitBlockStmt(stmt);

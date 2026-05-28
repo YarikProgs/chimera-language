@@ -75,11 +75,9 @@ public class ChimeraPseudocodeBuilder implements ChimeraVisitor<String> {
 
     @Override
     public String visitLambdaExpr(Expr.LambdaExpr expr) {
-        return build(b -> {
-            b.append("fn(")
-                    .append(expr.parameters().stream().map(this::visit).collect(Collectors.joining(", ")))
-                    .append(") ").append(visit(expr.body()));
-        });
+        return build(b -> b.append("fn(")
+                .append(expr.parameters().stream().map(this::visit).collect(Collectors.joining(", ")))
+                .append(") ").append(visit(expr.body())));
     }
 
     @Override
@@ -101,11 +99,9 @@ public class ChimeraPseudocodeBuilder implements ChimeraVisitor<String> {
 
     @Override
     public String visitTernaryExpr(Expr.TernaryExpr expr) {
-        return build(b -> {
-            b.append("(")
-                    .append(visit(expr.cond())).append(" ? ").append(visit(expr.thenExpr())).append(" : ").append(visit(expr.elseExpr()))
-                    .append(")");
-        });
+        return build(b -> b.append("(")
+                .append(visit(expr.cond())).append(" ? ").append(visit(expr.thenExpr())).append(" : ").append(visit(expr.elseExpr()))
+                .append(")"));
     }
 
     @Override
@@ -129,7 +125,7 @@ public class ChimeraPseudocodeBuilder implements ChimeraVisitor<String> {
             case Expr.LiteralExpr.Int i -> i.value().toString();
             case Expr.LiteralExpr.Float f -> f.value().toString();
             case Expr.LiteralExpr.Bool b -> String.valueOf(b.value());
-            case Expr.LiteralExpr.Null n -> "null";
+            case Expr.LiteralExpr.Null ignored -> "null";
             case Expr.LiteralExpr.String s -> "\"" + s.value() + "\"";
             case Expr.LiteralExpr.List l ->
                     "[" + l.value().stream().map(this::visit).collect(Collectors.joining(", ")) + "]";
@@ -229,6 +225,11 @@ public class ChimeraPseudocodeBuilder implements ChimeraVisitor<String> {
     @Override
     public String visitFunctionType(Type.FunctionType expr) {
         return "(" + expr.params().stream().map(this::visit).collect(Collectors.joining(", ")) + ") -> " + visit(expr.returnType());
+    }
+
+    @Override
+    public String visitErrorType(Type.ErrorType type) {
+        return "TYPEERR";
     }
 
     private static String build(Consumer<StringBuilder> consumer) {

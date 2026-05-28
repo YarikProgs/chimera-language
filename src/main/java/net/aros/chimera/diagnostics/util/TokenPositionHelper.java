@@ -38,7 +38,7 @@ public class TokenPositionHelper {
     }
 
     public SourceSpan end(@NotNull Token token) {
-        return new SourceSpan(new SourcePos(token.getLine(), getColumn(token) + len(token)));
+        return new SourceSpan(new SourcePos(token.getLine(), getColumn(token) + len(token) - 1));
     }
 
     public SourceSpan end(@NotNull ParserRuleContext ctx) {

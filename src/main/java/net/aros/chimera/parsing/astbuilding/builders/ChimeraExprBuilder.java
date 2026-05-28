@@ -6,6 +6,7 @@ import net.aros.chimera.ast.Modifier;
 import net.aros.chimera.ast.first.Expr;
 import net.aros.chimera.ast.first.Stmt;
 import net.aros.chimera.ast.ops.NullAccessMode;
+import net.aros.chimera.parsing.astbuilding.AstBuildException;
 import net.aros.chimera.parsing.astbuilding.ChimeraAstBuilder;
 import org.jetbrains.annotations.NotNull;
 
@@ -65,6 +66,18 @@ public class ChimeraExprBuilder extends ChimeraAntlrParserBaseVisitor<Expr> {
     }
 
     @Override
+    public Expr visitBinaryExprMissingRhs(ChimeraAntlrParser.BinaryExprMissingRhsContext ctx) {
+        parent.getReporter().onBinaryMissingRhs(ctx, ctx.op.getText());
+        return new Expr.BinaryExpr(visit(ctx.left), getBinaryOperator(ctx.op), new Expr.ErrorExpr(pos(ctx)), pos(ctx));
+    }
+
+    @Override
+    public Expr visitBinaryExprMissingLhs(ChimeraAntlrParser.BinaryExprMissingLhsContext ctx) {
+        parent.getReporter().onBinaryMissingLhs(ctx, ctx.op.getText());
+        return new Expr.BinaryExpr(new Expr.ErrorExpr(pos(ctx)), getBinaryOperator(ctx.op), visit(ctx.right), pos(ctx));
+    }
+
+    @Override
     public Expr visitFactorExpr(ChimeraAntlrParser.@NotNull FactorExprContext ctx) {
         return new Expr.BinaryExpr(visit(ctx.left), getBinaryOperator(ctx.op), visit(ctx.right), pos(ctx));
     }
@@ -120,6 +133,24 @@ public class ChimeraExprBuilder extends ChimeraAntlrParserBaseVisitor<Expr> {
     }
 
     @Override
+    public Expr visitTernaryExprMissingThen(ChimeraAntlrParser.TernaryExprMissingThenContext ctx) {
+        parent.getReporter().onTernaryMissingThen(ctx);
+        return new Expr.TernaryExpr(visit(ctx.cond), new Expr.ErrorExpr(pos(ctx.QuestionMark().getSymbol())), visit(ctx.elseExpr), pos(ctx));
+    }
+
+    @Override
+    public Expr visitTernaryExprMissingElse(ChimeraAntlrParser.TernaryExprMissingElseContext ctx) {
+        parent.getReporter().onTernaryMissingElse(ctx);
+        return new Expr.TernaryExpr(visit(ctx.cond), visit(ctx.thenExpr), new Expr.ErrorExpr(pos(ctx.thenExpr.stop)), pos(ctx));
+    }
+
+    @Override
+    public Expr visitTernaryExprMissingThenAndElse(ChimeraAntlrParser.TernaryExprMissingThenAndElseContext ctx) {
+        parent.getReporter().onTernaryMissingThenAndElse(ctx);
+        return new Expr.TernaryExpr(visit(ctx.cond), new Expr.ErrorExpr(pos(ctx.QuestionMark().getSymbol())), new Expr.ErrorExpr(pos(ctx.QuestionMark().getSymbol())), pos(ctx));
+    }
+
+    @Override
     public Expr visitTernaryExpr(ChimeraAntlrParser.@NotNull TernaryExprContext ctx) {
         return new Expr.TernaryExpr(visit(ctx.cond), visit(ctx.thenExpr), visit(ctx.elseExpr), pos(ctx));
     }
@@ -127,6 +158,47 @@ public class ChimeraExprBuilder extends ChimeraAntlrParserBaseVisitor<Expr> {
     @Override
     public Expr visitNullCoalesceExpr(ChimeraAntlrParser.@NotNull NullCoalesceExprContext ctx) {
         return new Expr.NullCoalesceExpr(visit(ctx.left), visit(ctx.right), pos(ctx));
+    }
+
+    @Override
+    public Expr visitLambdaExprMissingParameters(ChimeraAntlrParser.LambdaExprMissingParametersContext ctx) {
+        parent.getReporter().onLambdaMissingParameters(ctx);
+        Stmt.BlockStmt body = ctx.blockStmt() != null
+                ? (Stmt.BlockStmt) parent.getStmtBuilder().visit(ctx.blockStmt())
+                : syntheticBlock(visit(ctx.expr()));
+
+        return new Expr.LambdaExpr(
+                List.of(),
+                Optional.ofNullable(ctx.type()).map(parent.getTypeBuilder()::visit),
+                body,
+                pos(ctx)
+        );
+    }
+
+    @Override
+    public Expr visitLambdaExprMissingReturnType(ChimeraAntlrParser.LambdaExprMissingReturnTypeContext ctx) {
+        parent.getReporter().onLambdaMissingReturnType(ctx);
+        Stmt.BlockStmt body = ctx.blockStmt() != null
+                ? (Stmt.BlockStmt) parent.getStmtBuilder().visit(ctx.blockStmt())
+                : syntheticBlock(visit(ctx.expr()));
+
+        return new Expr.LambdaExpr(
+                parent.getElementBuilder().buildParameters(ctx.parameters()),
+                Optional.empty(),
+                body,
+                pos(ctx)
+        );
+    }
+
+    @Override
+    public Expr visitLambdaExprMissingBody(ChimeraAntlrParser.LambdaExprMissingBodyContext ctx) {
+        parent.getReporter().onLambdaMissingBody(ctx);
+        return new Expr.LambdaExpr(
+                parent.getElementBuilder().buildParameters(ctx.parameters()),
+                Optional.empty(),
+                syntheticBlock(new Expr.ErrorExpr(pos(ctx.RParen().getSymbol()))),
+                pos(ctx)
+        );
     }
 
     @Override
@@ -144,8 +216,34 @@ public class ChimeraExprBuilder extends ChimeraAntlrParserBaseVisitor<Expr> {
     }
 
     @Override
+    public Expr visitAssignmentExprMissingType(ChimeraAntlrParser.AssignmentExprMissingTypeContext ctx) {
+        parent.getReporter().onAssignmentMissingType(ctx);
+        return new Expr.AssignExpr(visit(ctx.lvalue), Optional.empty(), visit(ctx.rvalue), pos(ctx));
+    }
+
+    @Override
+    public Expr visitAssignmentExprMissingRhs(ChimeraAntlrParser.AssignmentExprMissingRhsContext ctx) {
+        parent.getReporter().onAssignmentMissingRhs(ctx);
+        return new Expr.AssignExpr(visit(ctx.lvalue), Optional.ofNullable(ctx.type()).map(parent.getTypeBuilder()::visit), new Expr.ErrorExpr(pos(ctx.assignmentOperator())), pos(ctx));
+    }
+
+    @Override
+    public Expr visitAssignmentExprMissingLhs(ChimeraAntlrParser.AssignmentExprMissingLhsContext ctx) {
+        parent.getReporter().onAssignmentMissingLhs(ctx);
+        return new Expr.AssignExpr(new Expr.ErrorExpr(pos(ctx)), Optional.ofNullable(ctx.type()).map(parent.getTypeBuilder()::visit), visit(ctx.rvalue), pos(ctx));
+    }
+
+    @Override
     public Expr visitAssignmentExpr(ChimeraAntlrParser.@NotNull AssignmentExprContext ctx) {
         return new Expr.AssignExpr(visit(ctx.lvalue), Optional.ofNullable(ctx.type()).map(parent.getTypeBuilder()::visit), visit(ctx.rvalue), pos(ctx));
+    }
+
+    @Override
+    public Expr visitListPrimaryUnclosed(ChimeraAntlrParser.ListPrimaryUnclosedContext ctx) {
+        parent.getReporter().onListPrimaryUnclosed(ctx);
+        List<Expr> expressions = new ArrayList<>();
+        for (ChimeraAntlrParser.ExprContext eCtx : ctx.expr()) expressions.add(visit(eCtx));
+        return new Expr.LiteralExpr.List(expressions, pos(ctx));
     }
 
     @Override
@@ -156,9 +254,17 @@ public class ChimeraExprBuilder extends ChimeraAntlrParserBaseVisitor<Expr> {
     }
 
     @Override
+    public Expr visitMapPrimaryUnclosed(ChimeraAntlrParser.MapPrimaryUnclosedContext ctx) {
+        parent.getReporter().onMapPrimaryUnclosed(ctx);
+        Map<Expr, Expr> map = new HashMap<>();
+        for (ChimeraAntlrParser.MapPairContext pair : ctx.mapPair()) insertPair(map, pair);
+        return new Expr.LiteralExpr.Map(map, pos(ctx));
+    }
+
+    @Override
     public Expr visitMapPrimary(ChimeraAntlrParser.@NotNull MapPrimaryContext ctx) {
         Map<Expr, Expr> map = new HashMap<>();
-        for (ChimeraAntlrParser.MapPairContext pair : ctx.mapPair()) map.put(visit(pair.key), visit(pair.value));
+        for (ChimeraAntlrParser.MapPairContext pair : ctx.mapPair()) insertPair(map, pair);
         return new Expr.LiteralExpr.Map(map, pos(ctx));
     }
 
@@ -201,7 +307,39 @@ public class ChimeraExprBuilder extends ChimeraAntlrParserBaseVisitor<Expr> {
     }
 
     @Override
+    public Expr visitExprParenPrimaryUnclosed(ChimeraAntlrParser.ExprParenPrimaryUnclosedContext ctx) {
+        parent.getReporter().onUnclosedPrimary(ctx);
+        return visit(ctx.expr());
+    }
+
+    @Override
     public Expr visitExprParenPrimary(ChimeraAntlrParser.ExprParenPrimaryContext ctx) {
         return visit(ctx.expr());
+    }
+
+    private void insertPair(Map<Expr, Expr> map, ChimeraAntlrParser.MapPairContext ctx) {
+        Expr key, value;
+        switch (ctx) {
+            case ChimeraAntlrParser.ValidMapPairContext validCtx -> {
+                key = visit(validCtx.key);
+                value = visit(validCtx.value);
+            }
+            case ChimeraAntlrParser.MapPairWithoutKeyContext withoutKeyCtx -> {
+                parent.getReporter().onPairMissingKey(withoutKeyCtx);
+                key = new Expr.ErrorExpr(pos(withoutKeyCtx));
+                value = visit(withoutKeyCtx.value);
+            }
+            case ChimeraAntlrParser.MapPairWithoutValueContext withoutValueCtx -> {
+                parent.getReporter().onPairMissingValue(withoutValueCtx);
+                key = visit(withoutValueCtx.key);
+                value = new Expr.ErrorExpr(pos(withoutValueCtx));
+            }
+            case ChimeraAntlrParser.MapPairWithoutAllContext withoutAllCtx -> {
+                parent.getReporter().onPairMissingAll(withoutAllCtx);
+                return;
+            }
+            default -> throw new AstBuildException("Unknown MapPairContext: " + ctx.getClass().getName());
+        }
+        map.put(key, value);
     }
 }

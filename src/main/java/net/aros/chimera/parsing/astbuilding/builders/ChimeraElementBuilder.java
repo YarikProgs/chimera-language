@@ -31,12 +31,17 @@ public class ChimeraElementBuilder extends ChimeraAntlrParserBaseVisitor<Node> {
     }
 
     @Override
-    public Node visitAnnotation(ChimeraAntlrParser.@NotNull AnnotationContext ctx) {
+    public Node visitValidAnnotation(ChimeraAntlrParser.@NotNull ValidAnnotationContext ctx) {
         return new Node.Annotation(id(ctx.Identifier()), Optional.ofNullable(ctx.arguments()).map(this::buildArguments), pos(ctx));
     }
 
     @Override
-    public Node visitParameter(ChimeraAntlrParser.@NotNull ParameterContext ctx) {
+    public Node visitUnclosedAnnotation(ChimeraAntlrParser.UnclosedAnnotationContext ctx) {
+        return super.visitUnclosedAnnotation(ctx);
+    }
+
+    @Override
+    public Node visitValidParameter(ChimeraAntlrParser.@NotNull ValidParameterContext ctx) {
         return new Node.Parameter(
                 buildAnnotations(ctx.annotations()),
                 id(ctx.Identifier()),
@@ -44,6 +49,16 @@ public class ChimeraElementBuilder extends ChimeraAntlrParserBaseVisitor<Node> {
                 Optional.ofNullable(ctx.expr()).map(parent.getExprBuilder()::visit),
                 pos(ctx)
         );
+    }
+
+    @Override
+    public Node visitDefaultedParameterWithoutValue(ChimeraAntlrParser.DefaultedParameterWithoutValueContext ctx) {
+        return super.visitDefaultedParameterWithoutValue(ctx);
+    }
+
+    @Override
+    public Node visitLambdaExprMissingParameters(ChimeraAntlrParser.LambdaExprMissingParametersContext ctx) {
+        return super.visitLambdaExprMissingParameters(ctx);
     }
 
     public List<Node.Annotation> buildAnnotations(ChimeraAntlrParser.@NotNull AnnotationsContext ctx) {

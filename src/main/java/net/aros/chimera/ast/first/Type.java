@@ -16,4 +16,6 @@ public sealed interface Type extends Node {
     record ListType(Type type, SourcePos pos) implements Type {}
     record MapType(Type keyType, Type valueType, SourcePos pos) implements Type {}
     record IdentifierType(String name, SourcePos pos) implements Type {}
+
+    record ErrorType(SourcePos pos) implements Type {}
 }
