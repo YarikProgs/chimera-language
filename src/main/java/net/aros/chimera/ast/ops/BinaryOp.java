@@ -20,5 +20,7 @@ public enum BinaryOp {
     GREATER,
     GREATER_EQUAL,
     EQUALS,
-    NOT_EQUALS
+    ADDRESS_EQUALS,
+    NOT_EQUALS,
+    ADDRESS_NOT_EQUALS
 }

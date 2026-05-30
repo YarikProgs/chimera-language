@@ -12,7 +12,7 @@ import java.nio.file.Path;
 
 public class ChimeraMain {
     public static void main(String[] args) throws URISyntaxException, IOException {
-        SourceFile sourceFile = SourceFile.from(Path.of(ChimeraMain.class.getResource("/third.chi").toURI()));
+        SourceFile sourceFile = SourceFile.from(Path.of(ChimeraMain.class.getResource("/syntax.chi").toURI()));
         ParseResult result = new ChimeraParser(sourceFile).parse();
 
         String rendered = new DefaultDiagnosticRenderer().renderDiagnostics(sourceFile, result.diagnostics());

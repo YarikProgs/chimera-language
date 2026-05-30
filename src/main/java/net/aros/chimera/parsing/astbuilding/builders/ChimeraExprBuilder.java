@@ -4,7 +4,6 @@ import net.aros.chimera.ChimeraAntlrParser;
 import net.aros.chimera.ChimeraAntlrParserBaseVisitor;
 import net.aros.chimera.ast.Modifier;
 import net.aros.chimera.ast.first.Expr;
-import net.aros.chimera.ast.first.Stmt;
 import net.aros.chimera.ast.ops.BinaryOp;
 import net.aros.chimera.ast.ops.NullAccessMode;
 import net.aros.chimera.parsing.astbuilding.AstBuildException;
@@ -164,14 +163,11 @@ public class ChimeraExprBuilder extends ChimeraAntlrParserBaseVisitor<Expr> {
     @Override
     public Expr visitLambdaExprMissingParameters(ChimeraAntlrParser.LambdaExprMissingParametersContext ctx) {
         parent.getReporter().onLambdaMissingParameters(ctx);
-        Stmt.BlockStmt body = ctx.blockStmt() != null
-                ? (Stmt.BlockStmt) parent.getStmtBuilder().visit(ctx.blockStmt())
-                : syntheticBlock(visit(ctx.expr()));
 
         return new Expr.LambdaExpr(
                 List.of(),
                 Optional.ofNullable(ctx.type()).map(parent.getTypeBuilder()::visit),
-                body,
+                parent.getStmtBuilder().visit(ctx.functionBody()),
                 pos(ctx)
         );
     }
@@ -179,14 +175,11 @@ public class ChimeraExprBuilder extends ChimeraAntlrParserBaseVisitor<Expr> {
     @Override
     public Expr visitLambdaExprMissingReturnType(ChimeraAntlrParser.LambdaExprMissingReturnTypeContext ctx) {
         parent.getReporter().onLambdaMissingReturnType(ctx);
-        Stmt.BlockStmt body = ctx.blockStmt() != null
-                ? (Stmt.BlockStmt) parent.getStmtBuilder().visit(ctx.blockStmt())
-                : syntheticBlock(visit(ctx.expr()));
 
         return new Expr.LambdaExpr(
                 parent.getElementBuilder().buildParameters(ctx.parameters()),
                 Optional.empty(),
-                body,
+                parent.getStmtBuilder().visit(ctx.functionBody()),
                 pos(ctx)
         );
     }
@@ -197,21 +190,17 @@ public class ChimeraExprBuilder extends ChimeraAntlrParserBaseVisitor<Expr> {
         return new Expr.LambdaExpr(
                 parent.getElementBuilder().buildParameters(ctx.parameters()),
                 Optional.empty(),
-                syntheticBlock(new Expr.ErrorExpr(pos(ctx.RParen().getSymbol()))),
+                syntheticExprStatement(new Expr.ErrorExpr(pos(ctx.RParen().getSymbol()))),
                 pos(ctx)
         );
     }
 
     @Override
     public Expr visitLambdaExpr(ChimeraAntlrParser.@NotNull LambdaExprContext ctx) {
-        Stmt.BlockStmt body = ctx.blockStmt() != null
-                ? (Stmt.BlockStmt) parent.getStmtBuilder().visit(ctx.blockStmt())
-                : syntheticBlock(visit(ctx.expr()));
-
         return new Expr.LambdaExpr(
                 parent.getElementBuilder().buildParameters(ctx.parameters()),
                 Optional.ofNullable(ctx.type()).map(parent.getTypeBuilder()::visit),
-                body,
+                parent.getStmtBuilder().visit(ctx.functionBody()),
                 pos(ctx)
         );
     }
@@ -234,18 +223,6 @@ public class ChimeraExprBuilder extends ChimeraAntlrParserBaseVisitor<Expr> {
         BinaryOp op = getBinaryOperatorFromAssignment(ctx.assignmentOperator().op);
         Expr lvalue = visit(ctx.lvalue);
         Expr rvalue = new Expr.ErrorExpr(pos(ctx.assignmentOperator()));
-        if (op != null) {
-            rvalue = new Expr.BinaryExpr(lvalue, op, rvalue, pos(ctx));
-        }
-        return new Expr.AssignExpr(lvalue, Optional.ofNullable(ctx.type()).map(parent.getTypeBuilder()::visit), rvalue, pos(ctx));
-    }
-
-    @Override
-    public Expr visitAssignmentExprMissingLhs(ChimeraAntlrParser.AssignmentExprMissingLhsContext ctx) {
-        parent.getReporter().onAssignmentMissingLhs(ctx);
-        BinaryOp op = getBinaryOperatorFromAssignment(ctx.assignmentOperator().op);
-        Expr lvalue = new Expr.ErrorExpr(pos(ctx));
-        Expr rvalue = visit(ctx.rvalue);
         if (op != null) {
             rvalue = new Expr.BinaryExpr(lvalue, op, rvalue, pos(ctx));
         }
@@ -324,6 +301,12 @@ public class ChimeraExprBuilder extends ChimeraAntlrParserBaseVisitor<Expr> {
     public Expr visitStringLiteralPrimary(ChimeraAntlrParser.@NotNull StringLiteralPrimaryContext ctx) {
         String raw = ctx.StringLiteral().getText();
         return new Expr.LiteralExpr.String(unescape(raw.substring(1, raw.length() - 1)), pos(ctx));
+    }
+
+    @Override
+    public Expr visitMultilineStringLiteral(ChimeraAntlrParser.MultilineStringLiteralContext ctx) {
+        String raw = ctx.MultilineStringLiteral().getText();
+        return new Expr.LiteralExpr.String(unescape(raw.substring(3, raw.length() - 3).stripIndent()), pos(ctx));
     }
 
     @Override

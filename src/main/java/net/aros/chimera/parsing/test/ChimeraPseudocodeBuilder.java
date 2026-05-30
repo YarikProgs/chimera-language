@@ -46,7 +46,7 @@ public class ChimeraPseudocodeBuilder implements ChimeraVisitor<String> {
     public String visitWhileStmt(Stmt.WhileStmt stmt) {
         return build(b -> {
             b.append(stmt.annotations().stream().map(a -> visit(a) + "\n").collect(Collectors.joining()));
-            b.append("while ").append(visit(stmt.cond())).append(" ").append(visit(stmt.thenBlock()));
+            b.append("while ").append(visit(stmt.cond())).append(" ").append(visit(stmt.thenStmt()));
         });
     }
 
@@ -54,7 +54,7 @@ public class ChimeraPseudocodeBuilder implements ChimeraVisitor<String> {
     public String visitDoWhileStmt(Stmt.DoWhileStmt stmt) {
         return build(b -> {
             b.append(stmt.annotations().stream().map(a -> visit(a) + "\n").collect(Collectors.joining()));
-            b.append("do ").append(visit(stmt.doBlock())).append(" ").append(visit(stmt.cond())).append(";");
+            b.append("do ").append(visit(stmt.doStmt())).append(" ").append(visit(stmt.cond())).append(";");
         });
     }
 
@@ -129,6 +129,8 @@ public class ChimeraPseudocodeBuilder implements ChimeraVisitor<String> {
             case Expr.LiteralExpr.String s -> "\"" + s.value() + "\"";
             case Expr.LiteralExpr.List l ->
                     "[" + l.value().stream().map(this::visit).collect(Collectors.joining(", ")) + "]";
+            case Expr.LiteralExpr.Tuple t ->
+                    "(" + t.value().stream().map(this::visit).collect(Collectors.joining(", ")) + ")";
             case Expr.LiteralExpr.Map m ->
                     "{" + m.value().entrySet().stream().map(e -> visit(e.getKey()) + ": " + visit(e.getValue())).collect(Collectors.joining(", ")) + "}";
         };

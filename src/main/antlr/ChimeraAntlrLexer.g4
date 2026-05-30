@@ -10,9 +10,7 @@ tokens {
     ERROR_UNTERMINATED_COMMENT,
     ERROR_UNMATCHED_COMMENT_CLOSURE,
     ERROR_INVALID_NUMBER,
-    ERROR_INVALID_CHARACTER,
-    ERROR_EXPR,
-    ERROR_STMT
+    ERROR_INVALID_CHARACTER
 }
 
 // Keywords
@@ -48,7 +46,7 @@ At                       : '@'          ;
 RArrow                   : '->'         ;
 DoubleExclamationMark    : '!!'         ;
 ExclamationMark          : '!'          ;
-DoubleQuestionMark       : '??'          ;
+DoubleQuestionMark       : '??'         ;
 QuestionMark             : '?'          ;
 
 // Operators
@@ -81,29 +79,38 @@ LogicOrAssign            : '||='        ;
 LogicXorAssign           : '^^='        ;
 LogicXor                 : '^^' | 'xor' ;
 LogicOr                  : '||' | 'or'  ;
+AddressEquals            : '==='        ;
 Equals                   : '=='         ;
+AddressNotEquals         : '!=='        ;
 NotEquals                : '!='         ;
 LessEqual                : '<='         ;
 Less                     : '<'          ;
 GreaterEqual             : '>='         ;
 Greater                  : '>'          ;
 Assign                   : '='          ;
+Ellipsis                 : '...'        ;
 
-Identifier    : [_\p{L}][_\p{L}\p{N}]*           ;
-IntLiteral    : [0-9]+                           ;
-FloatLiteral  : [0-9]* '.' [0-9]+                ;
+Identifier    : [_\p{L}][_\p{L}\p{N}]*  ;
+IntLiteral    : [0-9]+                  ;
+FloatLiteral  : [0-9]* '.' [0-9]+       ;
 StringLiteral
     : '"'  ( '\\' [ntr"\\] | ~["\\\r\n] )* '"'
     | '\'' ( '\\' [ntr'\\] | ~['\\\r\n] )* '\''
     ;
-LineComment   : '//' ~[\r\n]*            -> skip ;
-BlockComment  : '/*' .*? '*/'            -> skip ;
-WS            : [ \t\r\n]+               -> skip ;
+MultilineStringLiteral
+    : '"""'    ( '\\' . | ~'\\' )*? '"""'
+    | '\'\'\'' ( '\\' . | ~'\\' )*? '\'\'\''
+    ;
+LineComment   : '//' ~[\r\n]*   -> skip ;
+BlockComment  : '/*' .*? '*/'   -> skip ;
+WS            : [ \t\r\n]+      -> skip ;
 
 InvalidIntegerIdentifier        : [0-9]+ [_\p{L}] [_\p{L}\p{N}]*                                                      -> type(ERROR_INVALID_NUMBER)            ;
 InvalidFloatIdentifier          : [0-9]* '.' [0-9]+ [_\p{L}] [_\p{L}\p{N}]*                                           -> type(ERROR_INVALID_NUMBER)            ;
 InvalidEscapeDoubleQuotedString : '"'  ( '\\' [ntr"\\] | ~["\\\r\n] )* '\\' ~[ntr"\r\n] ( '\\' . | ~["\\\r\n] )* '"'  -> type(ERROR_INVALID_ESCAPE)            ;
 InvalidEscapeSingleQuotedString : '\'' ( '\\' [ntr'\\] | ~['\\\r\n] )* '\\' ~[ntr'\r\n] ( '\\' . | ~['\\\r\n] )* '\'' -> type(ERROR_INVALID_ESCAPE)            ;
+UnterminatedSingleQuoteMultilineString : '"""'                                                                        -> type(ERROR_UNTERMINATED_STRING)       ;
+UnterminatedDoubleQuoteMultilineString : '\'\'\''                                                                     -> type(ERROR_UNTERMINATED_STRING)       ;
 UnterminatedDoubleQuoteString   : '"' ( '\\' . | ~["\\\r\n] )* (('\r'? '\n') | EOF)                                   -> type(ERROR_UNTERMINATED_STRING)       ;
 UnterminatedSingleQuoteString   : '\'' ( '\\' . | ~['\\\r\n] )* (('\r'? '\n') | EOF)                                  -> type(ERROR_UNTERMINATED_STRING)       ;
 UnterminatedComment             : '/*'                                                                                -> type(ERROR_UNTERMINATED_COMMENT)      ;

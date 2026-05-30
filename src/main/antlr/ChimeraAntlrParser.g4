@@ -15,19 +15,29 @@ program
 // Statements
 
 stmt
-    : annotations If expr stmt (Else stmt)?                                                                            # IfStmt
-    | annotations modifier* Fn Identifier LParen parameters RParen (Colon type)? (blockStmt | (Assign expr Semicolon)) # FnStmt
-    | annotations Do blockStmt While expr Semicolon                                                                    # DoWhileStmt
-    | annotations While expr blockStmt                                                                                 # WhileStmt
-    | annotations For forHeader stmt                                                                                   # ForStmt
-    | annotations Return expr? Semicolon                                                                               # ReturnStmt
-    | annotations expr Semicolon                                                                                       # ExprStmt
-    | blockStmt                                                                                                        # BlockStmtStmt
-    | ERROR_STMT                                                                                                       # ErrorStmt
+    : annotations If expr body (Else body)?                                                    # IfStmt
+    | annotations modifier* Fn Identifier LParen parameters RParen (RArrow type)? functionBody # FnStmt
+    | annotations Do body While expr Semicolon                                                 # DoWhileStmt
+    | annotations While expr body                                                              # WhileStmt
+    | annotations For forHeader body                                                           # ForStmt
+    | annotations Return expr? Semicolon                                                       # ReturnStmt
+    | annotations expr Semicolon                                                               # ExprStmt
+    | blockStmt                                                                                # BlockStmtStmt
     ;
 
 blockStmt
     : LBrace stmt* RBrace
+    ;
+
+body
+    : Colon stmt # SingleStmtBody
+    | blockStmt  # BlockStmtBody
+    ;
+
+functionBody
+    : Colon expr # ExprFunctionBody
+    | blockStmt  # BlockStmtFunctionBody
+    | Colon stmt # IllegalStmtBody
     ;
 
 forHeader
@@ -54,40 +64,44 @@ expr
     | left=expr op=(Plus | Minus) right=expr                                                    # TermExpr
     | left=expr op=(ShiftLeft | ShiftRight | ShiftRightUnsigned) right=expr                     # ShiftExpr
     | left=expr op=(Less | LessEqual | Greater | GreaterEqual) right=expr                       # ComparisonExpr
-    | left=expr op=(Equals | NotEquals) right=expr                                              # EqualityExpr
+    | left=expr op=(Equals | NotEquals | AddressEquals | AddressNotEquals) right=expr           # EqualityExpr
     | left=expr BitAnd right=expr                                                               # BitwiseAndExpr
     | left=expr BitXor right=expr                                                               # BitwiseXorExpr
     | left=expr BitOr right=expr                                                                # BitwiseOrExpr
     | left=expr LogicAnd right=expr                                                             # LogicalAndExpr
     | left=expr LogicXor right=expr                                                             # LogicalXorExpr
     | left=expr LogicOr right=expr                                                              # LogicalOrExpr
+    // Ternary
     | cond=expr QuestionMark thenExpr=expr Colon elseExpr=expr                                  # TernaryExpr
     | cond=expr QuestionMark Colon elseExpr=expr                                                # TernaryExprMissingThen
     | cond=expr QuestionMark thenExpr=expr                                                      # TernaryExprMissingElse
     | cond=expr QuestionMark                                                                    # TernaryExprMissingThenAndElse
+    // Null coalesce
     | left=expr DoubleQuestionMark right=expr                                                   # NullCoalesceExpr
     // Lambda
-    | Fn LParen parameters RParen (Colon type)? (blockStmt | (Assign expr))                     # LambdaExpr
+    | Fn LParen parameters RParen (RArrow type)? functionBody                                   # LambdaExpr
     | Fn LParen parameters RParen                                                               # LambdaExprMissingBody
-    | Fn (Colon type)? (blockStmt | (Assign expr))                                              # LambdaExprMissingParameters
-    | Fn LParen parameters RParen Colon (blockStmt | (Assign expr))                             # LambdaExprMissingReturnType
+    | Fn                          (RArrow type)? functionBody                                   # LambdaExprMissingParameters
+    | Fn LParen parameters RParen  RArrow        functionBody                                   # LambdaExprMissingReturnType
     // Assignment
     | <assoc=right> lvalue=expr (Colon type)? assignmentOperator rvalue=expr                    # AssignmentExpr
-    | <assoc=right> lvalue=expr Colon assignmentOperator rvalue=expr                            # AssignmentExprMissingType
+    | <assoc=right> lvalue=expr  Colon        assignmentOperator rvalue=expr                    # AssignmentExprMissingType
     | <assoc=right> lvalue=expr (Colon type)? assignmentOperator                                # AssignmentExprMissingRhs
-    | <assoc=right>             (Colon type)? assignmentOperator rvalue=expr                    # AssignmentExprMissingLhs
     // Binary error nodes
     | left=expr op=(Multiply | Divide | Modulo | Plus | Minus | ShiftLeft | ShiftRight |
                     ShiftRightUnsigned | Less | LessEqual | Greater | GreaterEqual | Equals |
                     NotEquals | BitAnd | BitXor | BitOr | LogicAnd | LogicXor | LogicOr |
-                    DoubleQuestionMark)                                                         # BinaryExprMissingRhs
+                    DoubleQuestionMark | AddressEquals | AddressNotEquals)                      # BinaryExprMissingRhs
     | op=(Multiply | Divide | Modulo | ShiftLeft | ShiftRight | ShiftRightUnsigned | Less |
           LessEqual | Greater | GreaterEqual | Equals | NotEquals | BitAnd | BitXor | BitOr |
-          LogicAnd | LogicXor | LogicOr | DoubleQuestionMark) right=expr                        # BinaryExprMissingLhs
+          LogicAnd | LogicXor | LogicOr | DoubleQuestionMark |
+          AddressEquals | AddressNotEquals) right=expr                                          # BinaryExprMissingLhs
 
     // Atoms
     | LBracket (expr (Comma expr)*)? RBracket                                                   # ListPrimary
     | LBracket (expr (Comma expr)*)?                                                            # ListPrimaryUnclosed
+    | LParen (expr (Comma expr)*) RParen                                                        # TuplePrimary
+    | LParen (expr (Comma expr)*)                                                               # TuplePrimaryUnclosed
     | LBrace (mapPair (Comma mapPair)*)? RBrace                                                 # MapPrimary
     | LBrace (mapPair (Comma mapPair)*)?                                                        # MapPrimaryUnclosed
     | IntLiteral                                                                                # IntLiteralPrimary
@@ -96,11 +110,11 @@ expr
     | False                                                                                     # FalsePrimary
     | Null                                                                                      # NullPrimary
     | StringLiteral                                                                             # StringLiteralPrimary
+    | MultilineStringLiteral                                                                    # MultilineStringLiteral
     | Identifier                                                                                # IdentifierPrimary
+    | Ellipsis                                                                                  # EllipsisPrimary
     | LParen expr RParen                                                                        # ExprParenPrimary
     | LParen expr                                                                               # ExprParenPrimaryUnclosed
-    // Error
-    | ERROR_EXPR                                                                                # ErrorExpr
     ;
 
 annotations

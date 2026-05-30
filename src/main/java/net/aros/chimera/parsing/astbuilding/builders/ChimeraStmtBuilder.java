@@ -12,8 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static net.aros.chimera.parsing.astbuilding.AstUtils.id;
-import static net.aros.chimera.parsing.astbuilding.AstUtils.pos;
+import static net.aros.chimera.parsing.astbuilding.AstUtils.*;
 
 public class ChimeraStmtBuilder extends ChimeraAntlrParserBaseVisitor<Stmt> {
     private final ChimeraAstBuilder parent;
@@ -24,7 +23,7 @@ public class ChimeraStmtBuilder extends ChimeraAntlrParserBaseVisitor<Stmt> {
 
     @Override
     public Stmt visitIfStmt(ChimeraAntlrParser.IfStmtContext ctx) {
-        return new Stmt.IfStmt(parent.getElementBuilder().buildAnnotations(ctx.annotations()), visitExpr(ctx.expr()), visit(ctx.stmt(0)), Optional.ofNullable(ctx.stmt(1)).map(this::visit), pos(ctx));
+        return new Stmt.IfStmt(parent.getElementBuilder().buildAnnotations(ctx.annotations()), visitExpr(ctx.expr()), visit(ctx.body(0)), Optional.ofNullable(ctx.body(1)).map(this::visit), pos(ctx));
     }
 
     @Override
@@ -34,12 +33,12 @@ public class ChimeraStmtBuilder extends ChimeraAntlrParserBaseVisitor<Stmt> {
 
     @Override
     public Stmt visitDoWhileStmt(ChimeraAntlrParser.DoWhileStmtContext ctx) {
-        return new Stmt.DoWhileStmt(parent.getElementBuilder().buildAnnotations(ctx.annotations()), (Stmt.BlockStmt) visit(ctx.blockStmt()), visitExpr(ctx.expr()), pos(ctx));
+        return new Stmt.DoWhileStmt(parent.getElementBuilder().buildAnnotations(ctx.annotations()), visit(ctx.body()), visitExpr(ctx.expr()), pos(ctx));
     }
 
     @Override
     public Stmt visitWhileStmt(ChimeraAntlrParser.WhileStmtContext ctx) {
-        return new Stmt.WhileStmt(parent.getElementBuilder().buildAnnotations(ctx.annotations()), visitExpr(ctx.expr()), (Stmt.BlockStmt) visit(ctx.blockStmt()), pos(ctx));
+        return new Stmt.WhileStmt(parent.getElementBuilder().buildAnnotations(ctx.annotations()), visitExpr(ctx.expr()), visit(ctx.body()), pos(ctx));
     }
 
     @Override
@@ -51,7 +50,7 @@ public class ChimeraStmtBuilder extends ChimeraAntlrParserBaseVisitor<Stmt> {
                 parent.getElementBuilder().buildAnnotations(ctx.annotations()),
                 variables,
                 visitExpr(ctx.forHeader().expr()),
-                visit(ctx.stmt()),
+                visit(ctx.body()),
                 pos(ctx)
         );
     }
@@ -71,6 +70,22 @@ public class ChimeraStmtBuilder extends ChimeraAntlrParserBaseVisitor<Stmt> {
         List<Stmt> stmts = new ArrayList<>();
         for (ChimeraAntlrParser.StmtContext sCtx : ctx.stmt()) stmts.add(visit(sCtx));
         return new Stmt.BlockStmt(stmts, pos(ctx));
+    }
+
+    @Override
+    public Stmt visitExprFunctionBody(ChimeraAntlrParser.ExprFunctionBodyContext ctx) {
+        return syntheticExprStatement(parent.getExprBuilder().visit(ctx.expr()));
+    }
+
+    @Override
+    public Stmt visitIllegalStmtBody(ChimeraAntlrParser.IllegalStmtBodyContext ctx) {
+        parent.getReporter().onIllegalFunctionStmtBody(ctx);
+        return new Stmt.ErrorStmt(pos(ctx));
+    }
+
+    @Override
+    public Stmt visitSingleStmtBody(ChimeraAntlrParser.SingleStmtBodyContext ctx) {
+        return visit(ctx.stmt());
     }
 
     private Expr visitExpr(ParseTree tree) {

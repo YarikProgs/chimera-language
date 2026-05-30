@@ -4,15 +4,13 @@ import net.aros.chimera.ChimeraAntlrLexer;
 import net.aros.chimera.ChimeraAntlrParser;
 import net.aros.chimera.ast.first.Program;
 import net.aros.chimera.diagnostics.DiagnosticCollector;
+import net.aros.chimera.diagnostics.error.ChimeraErrorStrategy;
 import net.aros.chimera.diagnostics.reporting.DefaultDiagnosticReporter;
 import net.aros.chimera.diagnostics.reporting.DiagnosticReporter;
 import net.aros.chimera.diagnostics.util.TokenPositionHelper;
 import net.aros.chimera.parsing.astbuilding.ChimeraAstBuilder;
 import net.aros.chimera.parsing.parsing.ParseResult;
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,7 +50,6 @@ public class ChimeraParser {
 
     private @Nullable CommonTokenStream lexTokens(CharStream stream) {
         ChimeraAntlrLexer lexer = new ChimeraAntlrLexer(stream);
-        // TODO: Configure lexer
         CommonTokenStream commonTokenStream = new CommonTokenStream(lexer);
         commonTokenStream.fill();
 
@@ -64,7 +61,8 @@ public class ChimeraParser {
 
     private @NotNull ChimeraAntlrParser.ProgramContext parseTokens(CommonTokenStream stream) {
         ChimeraAntlrParser parser = new ChimeraAntlrParser(stream);
-        // TODO: Configure parser
+        parser.setErrorHandler(new ChimeraErrorStrategy(diagnosticReporter));
+        parser.removeErrorListeners();
         return parser.program();
     }
 

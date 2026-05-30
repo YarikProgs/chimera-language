@@ -3,9 +3,14 @@ package net.aros.chimera.diagnostics.reporting;
 import net.aros.chimera.ChimeraAntlrParser;
 import net.aros.chimera.diagnostics.DiagnosticCollector;
 import net.aros.chimera.diagnostics.util.TokenPositionHelper;
+import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.Vocabulary;
+import org.antlr.v4.runtime.misc.IntervalSet;
 import org.jetbrains.annotations.NotNull;
+
+import static net.aros.chimera.ChimeraAntlrLexer.*;
 
 public class DefaultDiagnosticReporter extends DiagnosticReporter {
     public DefaultDiagnosticReporter(DiagnosticCollector diagnosticCollector, TokenPositionHelper posHelper) {
@@ -101,9 +106,17 @@ public class DefaultDiagnosticReporter extends DiagnosticReporter {
     }
 
     @Override
+    public void onIllegalFunctionStmtBody(ChimeraAntlrParser.IllegalStmtBodyContext ctx) {
+        diagnosticCollector.reportError(
+                posHelper.start(ctx.stmt()),
+                "statement cannot go after ':'. replace it with expression or block"
+        );
+    }
+
+    @Override
     public void onLambdaMissingParameters(ChimeraAntlrParser.LambdaExprMissingParametersContext ctx) {
         diagnosticCollector.reportError(
-                ctx.blockStmt() != null ? posHelper.start(ctx.blockStmt()) : posHelper.start(ctx.expr()),
+                posHelper.start(ctx.functionBody()),
                 "lambda misses parameters"
         );
     }
@@ -111,7 +124,7 @@ public class DefaultDiagnosticReporter extends DiagnosticReporter {
     @Override
     public void onLambdaMissingReturnType(ChimeraAntlrParser.LambdaExprMissingReturnTypeContext ctx) {
         diagnosticCollector.reportError(
-                posHelper.start(ctx.Colon().getSymbol()),
+                posHelper.end(ctx.RArrow().getSymbol()),
                 "lambda misses return type"
         );
     }
@@ -137,14 +150,6 @@ public class DefaultDiagnosticReporter extends DiagnosticReporter {
         diagnosticCollector.reportError(
                 posHelper.end(ctx.assignmentOperator()),
                 "assignment requires rvalue"
-        );
-    }
-
-    @Override
-    public void onAssignmentMissingLhs(ChimeraAntlrParser.AssignmentExprMissingLhsContext ctx) {
-        diagnosticCollector.reportError(
-                posHelper.start(ctx.assignmentOperator()),
-                "assignment requires lvalue"
         );
     }
 
@@ -274,5 +279,95 @@ public class DefaultDiagnosticReporter extends DiagnosticReporter {
                 posHelper.end(ctx.type()),
                 "expected ')' to close parenthesized type"
         );
+    }
+
+    @Override
+    public void onMissingToken(Vocabulary vocabulary, Token previousToken, Token token, int expectedType) {
+        String message = switch (expectedType) {
+            // TODO: more entries on noticing
+            case Comma, Semicolon, Dot, Colon, PlusAssign, MinusAssign, MultiplyAssign, DivideAssign, ModuloAssign,
+                 BitAndAssign, BitOrAssign, BitXorAssign, ShiftLeftAssign, ShiftRightAssign, ShiftRightUnsignedAssign,
+                 LogicAndAssign, LogicOrAssign, LogicXorAssign, Assign, RArrow, RBrace, RBracket, RParen ->
+                    "Missing " + getReadableTokenName(vocabulary, expectedType) + " after '" + previousToken.getText() + "'";
+            default ->
+                    "Missing " + getReadableTokenName(vocabulary, expectedType) + " before '" + token.getText() + "'";
+        };
+
+        diagnosticCollector.reportError(
+                posHelper.start(token),
+                message
+        );
+    }
+
+    @Override
+    public void onUnwantedToken(Vocabulary vocabulary, Token currentToken, int expectedType) {
+        String tokenName = getReadableTokenName(vocabulary, currentToken.getType());
+        String message;
+        if (expectedType != Token.INVALID_TYPE) {
+            message = "Unexpected " + tokenName + " '" + currentToken.getText() + "'. Expected " + getReadableTokenName(vocabulary, expectedType) + " instead";
+        } else {
+            message = "Extraneous " + tokenName + " '" + currentToken.getText() + "' needs to be removed";
+        }
+
+        diagnosticCollector.reportError(
+                posHelper.all(currentToken),
+                message
+        );
+    }
+
+    @Override
+    public void onInputMismatch(Vocabulary vocabulary, Token offendingToken, IntervalSet expectedTokens) {
+        diagnosticCollector.reportError(
+                posHelper.all(offendingToken),
+                "Mismatched syntax. Found " + getReadableTokenName(vocabulary, offendingToken.getType()) +
+                        " '" + offendingToken.getText() + "', but expected " + buildSeq(vocabulary, expectedTokens)
+        );
+    }
+
+    @Override
+    public void onFailedPredicate(Parser recognizer, Token currentToken, String ruleName) {
+        diagnosticCollector.reportError(
+                posHelper.all(currentToken),
+                "Semantic validation failed in rule '" + ruleName + "' near token '" + currentToken.getText() + "'"
+        );
+    }
+
+    @Override
+    public void onNoViableAlternative(Parser recognizer, Token offendingToken) {
+        String message;
+
+        if (offendingToken.getType() == Token.EOF) {
+            message = "Unexpected end of file. The expression or block is incomplete";
+        } else {
+            String tokenName = getReadableTokenName(recognizer.getVocabulary(), offendingToken.getType());
+            message = "Unrecognized syntax near " + tokenName + " '" + offendingToken.getText() + "'";
+        }
+
+        diagnosticCollector.reportError(posHelper.all(offendingToken), message);
+    }
+
+    private static @NotNull String buildSeq(Vocabulary vocabulary, @NotNull IntervalSet expectedTokens) {
+        if (expectedTokens.size() == 0) return "nothing";
+
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < expectedTokens.size() - 1; i++) {
+            builder.append(getReadableTokenName(vocabulary, expectedTokens.get(i))).append(", ");
+        }
+        if (expectedTokens.size() > 1)
+            builder.append("or ");
+        builder.append(getReadableTokenName(vocabulary, expectedTokens.get(expectedTokens.size() - 1)));
+        return builder.toString();
+    }
+
+    private static @NotNull String getReadableTokenName(Vocabulary vocabulary, int tokenType) {
+        if (tokenType == Token.EOF) return "end of file";
+
+        String literalName = vocabulary.getLiteralName(tokenType);
+        if (literalName != null) return literalName.replaceAll("^'|'$", "");
+
+        String symbolicName = vocabulary.getSymbolicName(tokenType);
+        if (symbolicName != null) return symbolicName;
+
+        return "token";
     }
 }

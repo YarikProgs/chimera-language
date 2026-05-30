@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 public sealed interface Expr extends Node {
-    record LambdaExpr(List<Parameter> parameters, Optional<Type> returnType, Stmt.BlockStmt body, SourcePos pos) implements Expr {}
+    record LambdaExpr(List<Parameter> parameters, Optional<Type> returnType, Stmt body, SourcePos pos) implements Expr {}
     record AssignExpr(Expr lvalue, Optional<Type> type, Expr rvalue, SourcePos pos) implements Expr {}
     record BinaryExpr(Expr left, BinaryOp op, Expr right, SourcePos pos) implements Expr {}
     record UnaryExpr(UnaryOp op, Expr expr, SourcePos pos) implements Expr {}
@@ -27,6 +27,7 @@ public sealed interface Expr extends Node {
 
     sealed interface LiteralExpr extends Expr {
         record List(java.util.List<Expr> value, SourcePos pos) implements LiteralExpr {}
+        record Tuple(java.util.List<Expr> value, SourcePos pos) implements LiteralExpr {}
         record Map(java.util.Map<Expr, Expr> value, SourcePos pos) implements LiteralExpr {}
         record Int(BigInteger value, SourcePos pos) implements LiteralExpr {}
         record Float(BigDecimal value, SourcePos pos) implements LiteralExpr {}

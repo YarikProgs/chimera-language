@@ -3,8 +3,11 @@ package net.aros.chimera.diagnostics.reporting;
 import net.aros.chimera.ChimeraAntlrParser;
 import net.aros.chimera.diagnostics.DiagnosticCollector;
 import net.aros.chimera.diagnostics.util.TokenPositionHelper;
+import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.Vocabulary;
+import org.antlr.v4.runtime.misc.IntervalSet;
 import org.jetbrains.annotations.NotNull;
 
 public abstract class DiagnosticReporter {
@@ -38,6 +41,8 @@ public abstract class DiagnosticReporter {
 
     public abstract void onTernaryMissingThenAndElse(ChimeraAntlrParser.@NotNull TernaryExprMissingThenAndElseContext ctx);
 
+    public abstract void onIllegalFunctionStmtBody(ChimeraAntlrParser.IllegalStmtBodyContext ctx);
+
     public abstract void onLambdaMissingParameters(ChimeraAntlrParser.LambdaExprMissingParametersContext ctx);
 
     public abstract void onLambdaMissingReturnType(ChimeraAntlrParser.LambdaExprMissingReturnTypeContext ctx);
@@ -47,8 +52,6 @@ public abstract class DiagnosticReporter {
     public abstract void onAssignmentMissingType(ChimeraAntlrParser.AssignmentExprMissingTypeContext ctx);
 
     public abstract void onAssignmentMissingRhs(ChimeraAntlrParser.AssignmentExprMissingRhsContext ctx);
-
-    public abstract void onAssignmentMissingLhs(ChimeraAntlrParser.AssignmentExprMissingLhsContext ctx);
 
     public abstract void onListPrimaryUnclosed(ChimeraAntlrParser.ListPrimaryUnclosedContext ctx);
 
@@ -81,4 +84,14 @@ public abstract class DiagnosticReporter {
     public abstract void onMapTypeMissingClosure(ChimeraAntlrParser.MapTypeMissingClosureContext ctx);
 
     public abstract void onParenTypeMissingClosure(ChimeraAntlrParser.ParenTypeMissingClosureContext ctx);
+
+    public abstract void onMissingToken(Vocabulary vocabulary, Token previousToken, Token token, int expectedType);
+
+    public abstract void onUnwantedToken(Vocabulary vocabulary, Token currentToken, int expectedType);
+
+    public abstract void onInputMismatch(Vocabulary vocabulary, Token offendingToken, IntervalSet expectedTokens);
+
+    public abstract void onFailedPredicate(Parser recognizer, Token currentToken, String ruleName);
+
+    public abstract void onNoViableAlternative(Parser recognizer, Token offendingToken);
 }

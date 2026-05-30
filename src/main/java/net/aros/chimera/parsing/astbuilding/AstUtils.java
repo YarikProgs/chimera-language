@@ -19,7 +19,7 @@ import java.text.Normalizer;
 import java.util.List;
 
 public class AstUtils {
-    public static Modifier modifier(ChimeraAntlrParser.ModifierContext mod) {
+    public static Modifier modifier(ChimeraAntlrParser.@NotNull ModifierContext mod) {
         if (mod.At() != null) return Modifier.STATIC;
         if (mod.Const() != null) return Modifier.CONST;
         throw new AstBuildException("Unknown modifier: " + mod.getText());
@@ -46,7 +46,9 @@ public class AstUtils {
             case ChimeraAntlrLexer.Greater -> BinaryOp.GREATER;
             case ChimeraAntlrLexer.GreaterEqual -> BinaryOp.GREATER_EQUAL;
             case ChimeraAntlrLexer.Equals -> BinaryOp.EQUALS;
+            case ChimeraAntlrLexer.AddressEquals -> BinaryOp.ADDRESS_EQUALS;
             case ChimeraAntlrLexer.NotEquals -> BinaryOp.NOT_EQUALS;
+            case ChimeraAntlrLexer.AddressNotEquals -> BinaryOp.ADDRESS_NOT_EQUALS;
             default -> throw new AstBuildException("Unknown binary operator: " + token.getText());
         };
     }
@@ -87,17 +89,13 @@ public class AstUtils {
         return pos(tree.getStart());
     }
 
-    public static @NotNull SourcePos pos(Token token) {
+    @Contract("_ -> new")
+    public static @NotNull SourcePos pos(@NotNull Token token) {
         return new SourcePos(token.getLine(), token.getCharPositionInLine() + 1);
     }
 
     public static String id(@NotNull TerminalNode node) {
         return Normalizer.normalize(node.getText(), Normalizer.Form.NFC);
-    }
-
-    @Contract("_ -> new")
-    public static Stmt.@NotNull BlockStmt syntheticBlock(Expr expr) {
-        return new Stmt.BlockStmt(List.of(syntheticExprStatement(expr)), expr.pos());
     }
 
     @Contract("_ -> new")

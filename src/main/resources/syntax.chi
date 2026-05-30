@@ -1,0 +1,145 @@
+// Single line comment
+/* Multiline
+   comment   */
+
+// ---- Statements ----
+
+// If statements
+if (true) { println("True"); }
+if true { println("True"); }
+
+// Function statements
+fn addTwoIntegers(first: int, second: int = 0 /* default parameters */) { return first + second; }
+fn addTwoFloats(first, second) -> float { return 10.0; }
+
+// Do-while statements
+do { println("First and only"); } while false;
+do { println("First and only"); } while (false);
+
+// While statements
+while (n < 7) { n+=1; }
+while n < 7 { n+=1; }
+
+// For statements
+for (e in obj) { println(e); }
+for e in obj { println(e); }
+
+// Return statement
+return 10;
+
+// Expression statement
+10;
+
+// Block statement
+{ first(); second(); }
+
+// All blocks can be replaced with ': stmt'
+if true: println("Shorty true");
+
+// All statements can have annotations
+[Ignore("AlwaysFalse")]
+if false: println("Unreachable");
+
+
+// ---- Expressions ----
+
+// Calling, member accessing
+a.b();
+b();
+
+// [Strict] unwrapping
+res = a!; // T?
+res = a!!; // T
+
+// Modifiers  (for assignment only)
+const a = 10; // a is immutable
+@a = 20;      // a is static
+
+// Short try
+a = try riskyFunction(); // T?
+
+// Unary expressions
+a = +10;   // 10
+b = -20;   // -20
+c = !true; // false
+d = ~10;   // -11 (bit not)
+
+// Binary expressions
+foo = bar * baz;  foo = bar / baz;  foo = bar % baz;
+foo = bar + baz;  foo = bar - baz;
+foo = bar >> baz; foo = bar << baz; foo = bar >>> baz;
+foo = bar < baz;  foo = bar > baz;  foo = bar >= baz;  foo = bar <= baz;
+foo = bar == baz; foo = bar != baz; foo = bar === baz; foo = bar !== baz;
+foo = bar & baz;  foo = bar && baz; foo = bar and baz;
+foo = bar ^ baz;  foo = bar ^^ baz; foo = bar xor baz;
+foo = bar | baz;  foo = bar || baz; foo = bar or baz;
+
+// Ternary expressions (short if)
+foo = bar ? baz : qux;
+
+// Null coalesce (if not null, or another)
+foo = bar ?? baz;
+
+// Lambda (one-line functions)
+foo = fn(bar, baz) -> qux { return bar + baz; };
+foo = fn(bar, baz) -> qux: bar + baz;
+foo = fn(bar, baz) { return bar + baz; };
+foo = fn(bar, baz): bar + baz;
+
+// Assignment
+lvalue = rvalue;
+foo = 10;
+foo = bar = baz = 10;
+foo += 10;
+foo = bar ^= baz ||= qux;
+
+// Atoms (literals)
+[1, 2, 3];
+{ 1: 1, 2: 2, 3: 3 };
+10;
+10.0;
+true;
+false;
+null;
+variable;
+"string";
+'string';
+"""
+multiline
+string
+""";
+'''
+    multiline
+    string
+''';
+( /*any other expr*/ 10 );
+
+
+// ---- Types ----
+
+// nullable
+var: int? = null;
+
+// intersection
+var: Mouse & Keyboard = computer;
+
+// union
+var: int | float = 10;
+
+// tuple
+var: tuple<int, float> = (1, 2, 3);
+
+// list
+var: list<int> = [1, 2, 3];
+
+// map
+var: map<int, int> = { 1: 2 };
+
+// functions
+var: (int, float) -> float = fn(i, f): i + f;
+
+// parens
+var: (int | ((float))) = 10;
+
+// identifier
+var: myType = 10;
